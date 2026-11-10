@@ -84,16 +84,20 @@ typedef enum vsf_spi_mode_t {
     VSF_SPI_MSB_FIRST                   = (0 << 7),
     VSF_SPI_LSB_FIRST                   = (1 << 7),
 
-    // NSS
-    VSF_SPI_CS_SOFTWARE_MODE            = (1 << 9),
-    VSF_SPI_CS_HARDWARE_MODE            = (0 << 9),
+    // NSS. Zero is software NSS, as in the template: init sets SWNSSEN and SWNSS.
+    VSF_SPI_CS_SOFTWARE_MODE            = (0 << 17),
+    // not supported: see capability, and CS is a GPIO of the caller's
+    VSF_SPI_CS_HARDWARE_MODE            = (1 << 17),
+    // slave only: select comes from the NSS pin (SWNSSEN=0)
+    VSF_SPI_CS_HARDWARE_INPUT_MODE      = (2 << 17),
+#define VSF_SPI_CS_HARDWARE_INPUT_MODE  VSF_SPI_CS_HARDWARE_INPUT_MODE
 
     __VSF_HW_SPI_CTL0_MASK              = VSF_SPI_MASTER
                                         | VSF_SPI_MODE_3
                                         | VSF_SPI_DATASIZE_16
-                                        | VSF_SPI_LSB_FIRST
-                                        | VSF_SPI_CS_SOFTWARE_MODE,
-    __VSF_HW_SPI_NOT_SUPPORT_MASK       = VSF_SPI_DATASIZE_32,
+                                        | VSF_SPI_LSB_FIRST,
+    __VSF_HW_SPI_NOT_SUPPORT_MASK       = VSF_SPI_DATASIZE_32
+                                        | VSF_SPI_CS_HARDWARE_MODE,
 } vsf_spi_mode_t;
 
 typedef enum vsf_spi_irq_mask_t {
@@ -105,6 +109,9 @@ typedef enum vsf_spi_irq_mask_t {
     VSF_SPI_IRQ_MASK_TX_CPL             = (1 << 16),
     VSF_SPI_IRQ_MASK_RX_CPL             = (1 << 17),
     VSF_SPI_IRQ_MASK_RX_OVERFLOW_ERR    = (1 << 5),
+    // CONFERR: comes with ERRIE, which RX_OVERFLOW_ERR turns on. Hardware has
+    // cleared SPIEN and MSTMOD by then, so the SPI needs init again.
+    VSF_SPI_IRQ_MASK_CONFIG_ERR         = (1 << 18),
 
     __VSF_HW_SPI_IRQ_MASK               = VSF_SPI_IRQ_MASK_RX
                                         | VSF_SPI_IRQ_MASK_TX

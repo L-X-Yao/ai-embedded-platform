@@ -68,7 +68,12 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_init)(
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
     VSF_HAL_ASSERT(NULL != cfg_ptr);
-    VSF_HAL_ASSERT(!(cfg_ptr->mode & __VSF_HW_SPI_NOT_SUPPORT_MASK));
+
+    uint32_t mode = cfg_ptr->mode;
+    if (    (mode & __VSF_HW_SPI_NOT_SUPPORT_MASK)
+        ||  ((mode & VSF_SPI_MASTER) && (mode & VSF_SPI_CS_HARDWARE_INPUT_MODE))) {
+        return VSF_ERR_NOT_SUPPORT;
+    }
 
     uint32_t reg = spi_ptr->reg;
 
@@ -78,14 +83,15 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_init)(
     SPI_CTL0(reg) &= ~SPI_CTL0_SPIEN;
 
     uint8_t psc = __spi_calc_prescaler(spi_ptr->pclk_hz, cfg_ptr->clock_hz);
-    uint32_t ctl0 = cfg_ptr->mode & __VSF_HW_SPI_CTL0_MASK;
+    uint32_t ctl0 = mode & __VSF_HW_SPI_CTL0_MASK;
     ctl0 |= (uint32_t)psc << 3;
-    if (cfg_ptr->mode & VSF_SPI_CS_SOFTWARE_MODE) {
-        ctl0 |= SPI_CTL0_SWNSS;
+    // Software NSS held high: a master then never sees NSS low and cannot hit
+    // CONFERR whatever the pin does, and a slave stays deselected until cs_active.
+    if (!(mode & VSF_SPI_CS_HARDWARE_INPUT_MODE)) {
+        ctl0 |= SPI_CTL0_SWNSSEN | SPI_CTL0_SWNSS;
     }
     SPI_CTL0(reg) = ctl0;
-    spi_ptr->slave_sw_nss = !(cfg_ptr->mode & VSF_SPI_MASTER)
-                        &&  (cfg_ptr->mode & VSF_SPI_CS_SOFTWARE_MODE);
+    spi_ptr->slave_sw_nss = !(mode & (VSF_SPI_MASTER | VSF_SPI_CS_HARDWARE_INPUT_MODE));
 
     vsf_spi_isr_t *isr_ptr = &cfg_ptr->isr;
     spi_ptr->isr = *isr_ptr;
@@ -275,7 +281,7 @@ vsf_spi_capability_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_capability)(
     VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr
 ) {
     return (vsf_spi_capability_t) {
-        .irq_mask                   = __VSF_HW_SPI_IRQ_MASK,
+        .irq_mask                   = __VSF_HW_SPI_IRQ_MASK | VSF_SPI_IRQ_MASK_CONFIG_ERR,
         .support_hardware_cs              = 0,
         .support_software_cs              = 1,
         .cs_count                   = spi_ptr->slave_sw_nss ? 1 : 0,
@@ -306,6 +312,11 @@ static void VSF_MCONNECT(__, VSF_SPI_CFG_IMP_PREFIX, _spi_irqhandler)(
         volatile uint32_t __dummy = SPI_DATA(reg);
         (void)__dummy;
         (void)SPI_STAT(reg);
+    }
+    // Cleared by reading STAT, done above, and then writing CTL0
+    if ((stat & SPI_STAT_CONFERR) && (ctl1 & SPI_CTL1_ERRIE)) {
+        irq_mask |= VSF_SPI_IRQ_MASK_CONFIG_ERR;
+        SPI_CTL0(reg) = SPI_CTL0(reg);
     }
 
     if ((irq_mask != 0) && (isr_ptr->handler_fn != NULL)) {

@@ -25,6 +25,8 @@ void vsf_hw_spi_fifo_transfer(vsf_hw_spi_t *s, void *out, uint_fast32_t *out_off
 vsf_err_t vsf_hw_spi_cs_active(vsf_hw_spi_t *s, uint_fast8_t index);
 vsf_err_t vsf_hw_spi_cs_inactive(vsf_hw_spi_t *s, uint_fast8_t index);
 vsf_spi_capability_t vsf_hw_spi_capability(vsf_hw_spi_t *s);
+void vsf_hw_spi_irq_enable(vsf_hw_spi_t *s, vsf_spi_irq_mask_t m);
+void SPI0_IRQHandler(void);
 
 static uint32_t regs[4];
 #define CTL0            regs[0]
@@ -39,14 +41,33 @@ static int isr_cycles;
 static uint16_t txreg, shiftreg, rxreg;
 static int tx_full, shift_left;
 static unsigned long overruns, polls, frames;
+static int nss_pin_low, conf_seen;
+static uint32_t last_off;
+static int callbacks;
+static uint32_t last_mask;
 
 static uint16_t reply(uint16_t v)
 {
     return (uint16_t)(v ^ 0x5A);
 }
 
+/* table 21-4: a master that sees NSS low faults and turns itself into a slave */
+static void check_conferr(void)
+{
+    if (!(CTL0 & SPI_CTL0_MSTMOD) || !(CTL0 & SPI_CTL0_SPIEN)) {
+        return;
+    }
+    int nss_low = (CTL0 & SPI_CTL0_SWNSSEN) ? !(CTL0 & SPI_CTL0_SWNSS)
+                                            : (nss_pin_low && !(CTL1 & SPI_CTL1_NSSDRV));
+    if (nss_low) {
+        st |= SPI_STAT_CONFERR;
+        CTL0 &= ~(SPI_CTL0_SPIEN | SPI_CTL0_MSTMOD);
+    }
+}
+
 static int clocking(void)
 {
+    check_conferr();
     return (CTL0 & SPI_CTL0_SPIEN) && (CTL0 & SPI_CTL0_MSTMOD);
 }
 
@@ -91,7 +112,15 @@ volatile uint32_t *sim_spi_reg(uint32_t reg, uint32_t off)
 {
     (void)reg;
     settle();
+    /* CONFERR clears on STAT then a write of CTL0, table 21-6. Only a write can
+     * follow a read of CTL0 at once here, as in x = x. */
+    if ((off == 0x00U) && (last_off == 0x00U) && conf_seen) {
+        st &= ~SPI_STAT_CONFERR;
+        conf_seen = 0;
+    }
+    last_off = off;
     if (off == OFF_STAT) {
+        conf_seen = !!(st & SPI_STAT_CONFERR);
         polls++;
         if ((long)polls == isr_at_poll) {
             run(isr_cycles);
@@ -122,6 +151,10 @@ static void reset_spi(uint32_t extra_mode)
     isr_cycles = 0;
     tx_full = shift_left = 0;
     overruns = polls = frames = 0;
+    nss_pin_low = conf_seen = 0;
+    last_off = 0xFF;
+    callbacks = 0;
+    last_mask = 0;
     frame_cycles = (extra_mode & VSF_SPI_DATASIZE_16) ? 128 : 64;
     host_asserts = 0;
     vsf_spi_cfg_t cfg = {
@@ -298,6 +331,79 @@ static void test_cs_slave(void)
     CHECK(CTL0 & SPI_CTL0_SWNSS);
 }
 
+static void on_irq(void *t, vsf_spi_t *p, vsf_spi_irq_mask_t m)
+{
+    (void)t; (void)p;
+    callbacks++;
+    last_mask = (uint32_t)m;
+}
+
+/* H1-18: the template's zero is software CS, and capability has no hardware CS */
+static void test_cs_mode(void)
+{
+    static uint8_t out[4] = { 1, 2, 3, 4 }, in[4];
+    uint_fast32_t to = 0, ro = 0;
+
+    printf("H1-18 master with no CS flag and the NSS pin low\n");
+    reset_spi(0);
+    vsf_spi_cfg_t cfg = { .mode = VSF_SPI_MASTER | VSF_SPI_MODE_0, .clock_hz = 21000000 };
+    nss_pin_low = 1;
+    CHECK(vsf_hw_spi_init(S, &cfg) == VSF_ERR_NONE);
+    vsf_hw_spi_enable(S);
+    CHECK(CTL0 & SPI_CTL0_SWNSSEN);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);
+    vsf_hw_spi_fifo_transfer(S, out, &to, in, &ro, 4);
+    settle();
+    CHECK(!(st & SPI_STAT_CONFERR));
+    CHECK(CTL0 & SPI_CTL0_MSTMOD);
+    CHECK(ro == 4);
+
+    printf("H1-18 hardware CS is refused\n");
+    memset(regs, 0, sizeof(regs));
+    host_asserts = 0;
+    cfg.mode = VSF_SPI_MASTER | VSF_SPI_MODE_0 | VSF_SPI_CS_HARDWARE_MODE;
+    CHECK(vsf_hw_spi_init(S, &cfg) == VSF_ERR_NOT_SUPPORT);
+    CHECK(CTL0 == 0);
+    CHECK(host_asserts == 0);
+    CHECK(vsf_hw_spi_capability(S).support_hardware_cs == 0);
+    cfg.mode = VSF_SPI_MASTER | VSF_SPI_MODE_0 | VSF_SPI_CS_HARDWARE_INPUT_MODE;
+    CHECK(vsf_hw_spi_init(S, &cfg) == VSF_ERR_NOT_SUPPORT);
+    CHECK(CTL0 == 0);
+
+    printf("H1-18 a slave can still take select from the NSS pin\n");
+    cfg.mode = VSF_SPI_SLAVE | VSF_SPI_MODE_0 | VSF_SPI_CS_HARDWARE_INPUT_MODE;
+    CHECK(vsf_hw_spi_init(S, &cfg) == VSF_ERR_NONE);
+    CHECK(!(CTL0 & SPI_CTL0_SWNSSEN));
+    CHECK(vsf_hw_spi_capability(S).cs_count == 0);
+    CHECK(vsf_hw_spi_cs_active(S, 0) == VSF_ERR_NOT_SUPPORT);
+}
+
+/* H1-18: CONFERR raises the ERRIE interrupt and only the sequence clears it */
+static void test_conferr_irq(void)
+{
+    long n = 0;
+
+    printf("H1-18 CONFERR is reported and cleared\n");
+    reset_spi(0);
+    vsf_spi_cfg_t cfg = { .mode = VSF_SPI_MASTER | VSF_SPI_MODE_0, .clock_hz = 21000000 };
+    cfg.isr.handler_fn = on_irq;
+    vsf_hw_spi_init(S, &cfg);
+    vsf_hw_spi_enable(S);
+    vsf_hw_spi_irq_enable(S, VSF_SPI_IRQ_MASK_RX_OVERFLOW_ERR);
+    st |= SPI_STAT_CONFERR;
+    CTL0 &= ~(SPI_CTL0_SPIEN | SPI_CTL0_MSTMOD);
+    while ((n < 1000) && (st & SPI_STAT_CONFERR) && (CTL1 & SPI_CTL1_ERRIE) && host_nvic_on[IRQN]) {
+        SPI0_IRQHandler();
+        settle();
+        n++;
+    }
+    printf("  interrupt entries: %ld\n", n);
+    CHECK(n == 1);
+    CHECK(callbacks == 1);
+    CHECK(last_mask == VSF_SPI_IRQ_MASK_CONFIG_ERR);
+    CHECK(vsf_hw_spi_capability(S).irq_mask & VSF_SPI_IRQ_MASK_CONFIG_ERR);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
@@ -306,5 +412,7 @@ int main(void)
     test_guard();
     test_cs_master();
     test_cs_slave();
+    test_cs_mode();
+    test_conferr_irq();
     return host_summary("spi");
 }

@@ -32,7 +32,7 @@ for p in "$@"; do
     cp "$P/common/$p/$p.c" "$P/common/$p/$p.h" "$B/common/$p/"
     echo "VSF_${up}_CFG_IMP_LV0(0, )" > "$B/hal/driver/common/$p/${p}_template.inc"
     # shellcheck disable=SC2086
-    if ! gcc $CFLAGS -DHOST_USE_$up -I"$B" -I"$T/host" \
+    if ! gcc $CFLAGS ${HOST_CFLAGS:-} -DHOST_USE_$up -I"$B" -I"$T/host" \
             "$B/common/$p/$p.c" "$T/host/host.c" "$T/test_$p.c" -o "$B/test_$p"; then
         echo "$p: BUILD FAILED"
         rc=1
