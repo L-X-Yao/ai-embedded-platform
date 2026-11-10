@@ -47,6 +47,29 @@ PROPERTY(feed_no_crash, 50000) {
     }
 }
 
+/* Property: with the timer on, a byte stream with no valid frame in it cannot
+ * finish a transfer, however many EOTs and CANs it holds after a bad frame */
+PROPERTY(purge_drops_everything_until_quiet, 20000) {
+    (void)prop__seed_orig; (void)prop__iter;
+    ymodem_t ym;
+    memset(&ym, 0, sizeof(ym));
+    ymodem_init(&ym, &mock_io);
+    PROP_ASSERT_EQ(ymodem_enable_line_idle(&ym), YMODEM_OK);
+    ymodem_start(&ym);
+
+    /* 'x' cannot start a block, so the framing is lost from here on */
+    PROP_ASSERT_EQ(ymodem_feed(&ym, 'x'), YMODEM_OK);
+
+    uint16_t num_bytes = (uint16_t)ARBI_RANGE(seed, 1, 300);
+    for (uint16_t i = 0; i < num_bytes; i++) {
+        uint8_t byte = ARBI_UINT8(seed);
+        if (byte < 64) byte = YMODEM_EOT;
+        else if (byte < 128) byte = YMODEM_CAN;
+        PROP_ASSERT_EQ(ymodem_feed(&ym, byte), YMODEM_OK);
+    }
+    PROP_ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+}
+
 /* Property: init is idempotent */
 PROPERTY(init_idempotent, 5000) {
     (void)prop__seed_orig; (void)prop__iter;
@@ -88,6 +111,7 @@ PROPERTY(state_consistent, 10000) {
 
 TEST_MAIN("ymodem properties") {
     RUN(feed_no_crash);
+    RUN(purge_drops_everything_until_quiet);
     RUN(init_idempotent);
     RUN(state_consistent);
 }

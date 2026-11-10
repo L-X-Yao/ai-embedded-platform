@@ -19,12 +19,20 @@ TEST(test_ymodem_init_null_io) {
     ASSERT_TRUE(ymodem_init(&_ym, NULL) != YMODEM_OK);
 }
 
+TEST(test_ymodem_enable_line_idle_null_ym) {
+    ASSERT_TRUE(ymodem_enable_line_idle(NULL) != YMODEM_OK);
+}
+
 TEST(test_ymodem_start_null_ym) {
     ASSERT_TRUE(ymodem_start(NULL) != YMODEM_OK);
 }
 
 TEST(test_ymodem_feed_null_ym) {
     ASSERT_TRUE(ymodem_feed(NULL, 0) != YMODEM_OK);
+}
+
+TEST(test_ymodem_line_idle_null_ym) {
+    ASSERT_TRUE(ymodem_line_idle(NULL) != YMODEM_OK);
 }
 
 TEST(test_ymodem_get_state_null_ym) {
@@ -45,8 +53,10 @@ TEST(test_ymodem_cancel_null_ym) {
 TEST_MAIN("null_param_ymodem") {
     RUN(test_ymodem_init_null_ym);
     RUN(test_ymodem_init_null_io);
+    RUN(test_ymodem_enable_line_idle_null_ym);
     RUN(test_ymodem_start_null_ym);
     RUN(test_ymodem_feed_null_ym);
+    RUN(test_ymodem_line_idle_null_ym);
     RUN(test_ymodem_get_state_null_ym);
     RUN(test_ymodem_get_file_size_null_ym);
     RUN(test_ymodem_cancel_null_ym);

@@ -116,10 +116,12 @@ static void check_state(const ymodem_t *ym) {
 //   op bits 0-1: 0 valid block, 1 bad CRC, 2 bad complement, 3 raw byte
 //   op bits 2-3: 0 next block, 1 duplicate, 2 skip ahead, 3 arbitrary number
 //   op bit 4:    1024-byte block instead of 128
+//   op bit 6:    with the timer on, report a quiet line instead
 //   op bit 7:    fail the write callback from this block on
 // For a raw byte, arg is the byte. Otherwise arg is the payload length and the
 // block is zero padded.
-static void fuzz_blocks(const ymodem_io_t *io, const uint8_t *data, size_t size) {
+static void fuzz_blocks(const ymodem_io_t *io, const uint8_t *data, size_t size,
+                        bool use_idle) {
     static uint8_t frame[FRAME_MAX];
     static uint8_t payload[YMODEM_BLOCK_SIZE_STX];
 
@@ -130,12 +132,19 @@ static void fuzz_blocks(const ymodem_io_t *io, const uint8_t *data, size_t size)
     ymodem_t ym;
     memset(&ym, 0, sizeof(ym));
     ymodem_init(&ym, io);
+    if (use_idle) ymodem_enable_line_idle(&ym);
     ymodem_start(&ym);
 
     bool running = true;
     while (running && in.left > 0) {
         uint8_t op = fuzz_u8(&in);
         uint8_t arg = fuzz_u8(&in);
+
+        if (use_idle && (op & 0x40)) {
+            running = ymodem_line_idle(&ym) == YMODEM_OK;
+            check_state(&ym);
+            continue;
+        }
 
         if ((op & 3) == 3) {
             running = ymodem_feed(&ym, arg) == YMODEM_OK;
@@ -228,7 +237,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         }
     }
 
-    fuzz_blocks(&io, data, size);
+    fuzz_blocks(&io, data, size, false);
+    fuzz_blocks(&io, data, size, true);
 
     return 0;
 }

@@ -74,6 +74,25 @@ static bool parse_block0(ymodem_t *ym, const uint8_t *data, uint16_t len)
     return true;
 }
 
+/* The framing can no longer be trusted: what follows may be the tail of a
+ * resent block. Only a block that passes its checks, or a quiet line, ends
+ * this. */
+static void lose_sync(ymodem_t *ym)
+{
+    ym->buf_pos = 0;
+    ym->purging = true;
+}
+
+/* recoverable — sender will retry */
+static ymodem_err_t reject_block(ymodem_t *ym)
+{
+    lose_sync(ym);
+    if (!ym->line_idle_on) {
+        (void)send_byte(ym, YMODEM_NAK);
+    }
+    return YMODEM_OK;
+}
+
 static ymodem_err_t process_block(ymodem_t *ym)
 {
     uint8_t blk     = ym->buf[1];
@@ -82,8 +101,7 @@ static ymodem_err_t process_block(ymodem_t *ym)
 
     /* block number complement check */
     if ((uint8_t)(blk + blk_inv) != 0xFF) {
-        (void)send_byte(ym, YMODEM_NAK);
-        return YMODEM_OK;  /* recoverable */
+        return reject_block(ym);
     }
 
     /* verify CRC-16 (YMODEM always uses CRC mode) */
@@ -92,9 +110,11 @@ static ymodem_err_t process_block(ymodem_t *ym)
                         ym->buf[crc_offset + 1]);
     uint16_t actual = ymodem_crc16(data, ym->block_size);
     if (actual != expected) {
-        (void)send_byte(ym, YMODEM_NAK);
-        return YMODEM_OK;  /* recoverable */
+        return reject_block(ym);
     }
+
+    /* a block that passes its checks means the framing is back */
+    ym->purging = false;
 
     /* sequence check */
     if (blk != ym->block_num) {
@@ -184,6 +204,15 @@ ymodem_err_t ymodem_init(ymodem_t *ym, const ymodem_io_t *io)
     return YMODEM_OK;
 }
 
+ymodem_err_t ymodem_enable_line_idle(ymodem_t *ym)
+{
+    if (!ym) return YMODEM_ERR_PARAM;
+    if (ym->state != YMODEM_STATE_IDLE) return YMODEM_ERR_PARAM;
+
+    ym->line_idle_on = true;
+    return YMODEM_OK;
+}
+
 ymodem_err_t ymodem_start(ymodem_t *ym)
 {
     if (!ym) return YMODEM_ERR_PARAM;
@@ -204,6 +233,12 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
         return YMODEM_ERR_PARAM;
     }
 
+    /* the line is still clearing: nothing on it can be trusted */
+    if (ym->purging && ym->line_idle_on) return YMODEM_OK;
+
+    /* the sender's two EOTs come back to back */
+    if (byte != YMODEM_EOT) ym->eot_seen = false;
+
     /* CAN detection — only at frame boundary, and two in a row, so that a
      * line hit cannot abort (ymodem.txt 4.1) */
     if (byte == YMODEM_CAN && ym->buf_pos == 0) {
@@ -218,6 +253,8 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
 
     /* EOT handling: first EOT -> NAK, second EOT -> ACK + 'C' for next file */
     if (byte == YMODEM_EOT && ym->buf_pos == 0) {
+        if (ym->purging) return YMODEM_OK;  /* file data, not an EOT */
+
         if (!ym->eot_seen) {
             /* first EOT — NAK per YMODEM spec */
             ym->eot_seen = true;
@@ -247,7 +284,9 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
             ym->buf_pos = 1;
             return YMODEM_OK;
         }
-        /* ignore other bytes at frame boundary */
+        /* A byte that cannot start a block: its header was lost, or this is
+         * the tail of one. Either way what follows is file data. */
+        lose_sync(ym);
         return YMODEM_OK;
     }
 
@@ -261,6 +300,30 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
     if (ym->buf_pos >= frame_size(ym)) {
         ym->buf_pos = 0;
         return process_block(ym);
+    }
+
+    return YMODEM_OK;
+}
+
+ymodem_err_t ymodem_line_idle(ymodem_t *ym)
+{
+    if (!ym || !ym->line_idle_on) return YMODEM_ERR_PARAM;
+
+    if (ym->state != YMODEM_STATE_HEADER &&
+        ym->state != YMODEM_STATE_DATA) {
+        return YMODEM_ERR_PARAM;
+    }
+
+    /* two CANs with a quiet gap between them are not consecutive */
+    ym->can_count = 0;
+
+    if (ym->purging || ym->buf_pos > 0) {
+        ym->purging = false;
+        ym->buf_pos = 0;
+        /* A sender waiting to start wants 'C', and one that has started
+         * treats 'C' as a NAK of block 0. */
+        return send_byte(ym, ym->state == YMODEM_STATE_HEADER
+                                 ? (uint8_t)YMODEM_C : (uint8_t)YMODEM_NAK);
     }
 
     return YMODEM_OK;

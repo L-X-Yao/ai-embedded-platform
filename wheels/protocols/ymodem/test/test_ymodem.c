@@ -703,6 +703,392 @@ TEST(test_err_crc_constant_and_recovery)
     ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_ACK);
 }
 
+/* Block 3 with byte 50 lost, then the sender's timer resends it. Resend byte
+ * 0 completes the short frame, so the rest lands on a frame boundary, and the
+ * data holds 0x04 0x04, which used to pass for the sender's two EOTs. Block 3
+ * because the numbers of blocks 1 and 2 are SOH and STX, which would lock a
+ * new frame at resend byte 1 and hide the data from the boundary. */
+TEST(test_lost_byte_data_eots_are_not_an_eot_pair)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t hdr[133];
+    build_block0(hdr, "fw.bin", 512);
+    feed_bytes(&ym, hdr, 133);
+
+    uint8_t frame[133];
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 2, 0x12);
+    feed_bytes(&ym, frame, 133);
+    int sent = g_sent.count;
+
+    build_soh_data_frame(frame, 3, 0x33);
+    feed_bytes(&ym, frame, 50);
+    feed_bytes(&ym, frame + 51, 82);
+
+    memset(&frame[3 + 20], YMODEM_EOT, 2);
+    uint16_t crc = calc_crc16(&frame[3], 128);
+    frame[131] = (uint8_t)(crc >> 8);
+    frame[132] = (uint8_t)(crc & 0xFF);
+    feed_bytes(&ym, frame, 133);
+
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+    ASSERT_EQ(g_sent.count, sent + 1);                   /* the one NAK */
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_NAK);
+
+    /* The next clean resend still lands. */
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(g_written.count, 3);
+    ASSERT_EQ(g_written.data[2][20], YMODEM_EOT);
+}
+
+/* Two EOTs with file data between them are not the sender's pair. */
+TEST(test_eot_pair_split_by_data_is_not_a_pair)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t hdr[133];
+    build_block0(hdr, "fw.bin", 256);
+    feed_bytes(&ym, hdr, 133);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, 'x'), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+}
+
+/* A stray 0x04 and a good block: the next 0x04 is a first EOT, not a second. */
+TEST(test_block_between_eots_restarts_the_pair)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 256);
+    feed_bytes(&ym, frame, 133);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    int sent = g_sent.count;
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_NAK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+}
+
+TEST(test_line_idle_needs_enable)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_ERR_PARAM);
+    ASSERT_EQ(ymodem_enable_line_idle(&ym), YMODEM_ERR_PARAM);  /* too late */
+    ASSERT_EQ(ymodem_line_idle(NULL), YMODEM_ERR_PARAM);
+    ASSERT_EQ(ymodem_enable_line_idle(NULL), YMODEM_ERR_PARAM);
+}
+
+TEST(test_line_idle_outside_a_transfer_refused)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ASSERT_EQ(ymodem_enable_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_ERR_PARAM);  /* not started */
+
+    ymodem_start(&ym);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(g_sent.count, 1);                          /* nothing to ask for */
+
+    ymodem_cancel(&ym);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_ERR_PARAM);
+}
+
+/* ymodem.txt 7.4: wait for the line to clear, then NAK. */
+TEST(test_line_idle_holds_the_nak_until_quiet)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_enable_line_idle(&ym);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 128);
+    feed_bytes(&ym, frame, 133);
+    int sent = g_sent.count;
+
+    build_soh_data_frame(frame, 1, 0x11);
+    frame[132] = (uint8_t)(frame[132] ^ 0xFF);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(g_sent.count, sent);
+
+    /* Everything is dropped now, even a good block, two CANs and two EOTs. */
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(g_written.count, 0);
+    ASSERT_EQ(g_sent.count, sent);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(g_sent.count, sent + 1);
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_NAK);
+
+    /* A second quiet period asks for nothing more. */
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(g_sent.count, sent + 1);
+
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(g_written.count, 1);
+    ASSERT_EQ(g_sent.bytes[sent + 1], YMODEM_ACK);
+}
+
+/* A sender that has not started would not read NAK as a request to. */
+TEST(test_line_idle_asks_for_block0_with_c)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_enable_line_idle(&ym);
+    ymodem_start(&ym);
+
+    ASSERT_EQ(ymodem_feed(&ym, 'x'), YMODEM_OK);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(g_sent.count, 2);
+    ASSERT_EQ(g_sent.bytes[1], YMODEM_C);
+}
+
+TEST(test_line_idle_drops_a_part_frame)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_enable_line_idle(&ym);
+    ymodem_start(&ym);
+
+    uint8_t frame[1029];
+    build_block0(frame, "fw.bin", 1024);
+    feed_bytes(&ym, frame, 133);
+
+    build_stx_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 700);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_NAK);
+
+    feed_bytes(&ym, frame, 1029);
+    ASSERT_EQ(g_written.count, 1);
+}
+
+/* Two CANs a quiet period apart are two line hits, not a cancel. */
+TEST(test_line_idle_splits_cans)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_enable_line_idle(&ym);
+    ymodem_start(&ym);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_line_idle(&ym), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_ERR_CANCEL);
+}
+
+/* ---------- one lost byte, every position ---------- */
+
+#define SIM_TRIES      10
+#define SIM_BLOCKS     5
+#define SIM_PADDED     2432u
+#define SIM_FILE_SIZE  (SIM_PADDED - 50u)  /* the last block is padded */
+
+enum { SIM_EXACT, SIM_FAILED, SIM_CUT_SHORT };
+
+/* Block 4 is there because its number looks like EOT. */
+static const uint16_t sim_sizes[SIM_BLOCKS] = { 1024, 128, 128, 128, 1024 };
+
+static uint8_t  sim_file[SIM_PADDED];
+static uint8_t  sim_out[SIM_PADDED];
+static uint32_t sim_out_len;
+static uint8_t  sim_frames[SIM_BLOCKS][1029];
+static uint8_t  sim_hdr[133];
+static uint8_t  sim_end[133];
+static uint8_t  sim_reply;
+
+typedef struct {
+    ymodem_t ym;
+    bool     use_idle;
+    bool     toss;       /* drops what arrived while sending (7.4) */
+    bool     impatient;  /* sender's timer fires once before the receiver's */
+    bool     done;
+    uint32_t lost_at;    /* this stream position never arrives */
+    uint32_t pos;
+} sim_t;
+
+static ymodem_err_t sim_write(void *ctx, uint32_t offset,
+                              const uint8_t *data, uint16_t len)
+{
+    (void)ctx;
+    if (offset + len > sizeof(sim_out)) return YMODEM_ERR_WRITE;
+    memcpy(sim_out + offset, data, len);
+    if (offset + len > sim_out_len) sim_out_len = offset + len;
+    return YMODEM_OK;
+}
+
+static ymodem_err_t sim_send(void *ctx, uint8_t byte)
+{
+    (void)ctx;
+    if (sim_reply == 0) sim_reply = byte;  /* oldest unread byte */
+    return YMODEM_OK;
+}
+
+static const ymodem_io_t g_sim_io = {
+    .write_block = sim_write,
+    .send_byte   = sim_send,
+    .ctx         = NULL,
+};
+
+/* Random data, heavy with the bytes that can pass for protocol. */
+static void sim_make_file(uint32_t seed)
+{
+    static const uint8_t hot[] = { YMODEM_SOH, YMODEM_STX, YMODEM_EOT, YMODEM_CAN };
+    for (size_t i = 0; i < sizeof(sim_file); i++) {
+        seed = seed * 1664525u + 1013904223u;
+        uint32_t r = seed >> 8;
+        sim_file[i] = (r & 3u) ? (uint8_t)(r >> 8) : hot[(r >> 2) & 3u];
+    }
+
+    build_block0(sim_hdr, "sim.bin", SIM_FILE_SIZE);
+    build_empty_block0(sim_end);
+
+    const uint8_t *data = sim_file;
+    for (int b = 0; b < SIM_BLOCKS; b++) {
+        uint16_t size = sim_sizes[b];
+        uint8_t blk = (uint8_t)(b + 1);
+        uint8_t *f = sim_frames[b];
+        f[0] = size == 1024 ? YMODEM_STX : YMODEM_SOH;
+        f[1] = blk;
+        f[2] = (uint8_t)(~blk);
+        memcpy(&f[3], data, size);
+        uint16_t crc = calc_crc16(data, size);
+        f[3 + size] = (uint8_t)(crc >> 8);
+        f[4 + size] = (uint8_t)(crc & 0xFF);
+        data += size;
+    }
+}
+
+/* A sender as in ymodem.txt 7.3.3, up to SIM_TRIES a block. */
+static bool sim_put(sim_t *s, const uint8_t *frame, uint16_t len)
+{
+    for (int tries = 0; tries < SIM_TRIES; tries++) {
+        sim_reply = 0;
+        for (uint16_t i = 0; i < len; i++) {
+            if (s->toss && i == len - 1) sim_reply = 0;
+            if (s->pos++ == s->lost_at) continue;
+            ymodem_err_t err = ymodem_feed(&s->ym, frame[i]);
+            if (err == YMODEM_DONE) {
+                s->done = true;
+                return true;
+            }
+            if (err != YMODEM_OK) return false;
+        }
+        if (sim_reply == 0 && s->use_idle) {
+            if (s->impatient) {
+                s->impatient = false;
+            } else if (ymodem_line_idle(&s->ym) != YMODEM_OK) {
+                return false;
+            }
+        }
+        if (sim_reply == YMODEM_ACK) return true;
+    }
+    return false;
+}
+
+static int sim_transfer(bool use_idle, bool toss, bool impatient, uint32_t lost_at)
+{
+    static sim_t s;
+
+    memset(&s, 0, sizeof(s));
+    memset(sim_out, 0, sizeof(sim_out));
+    sim_out_len = 0;
+    sim_reply = 0;
+    s.use_idle = use_idle;
+    s.toss = toss;
+    s.impatient = impatient;
+    s.lost_at = lost_at;
+
+    ymodem_init(&s.ym, &g_sim_io);
+    if (use_idle) ymodem_enable_line_idle(&s.ym);
+    ymodem_start(&s.ym);
+
+    if (!sim_put(&s, sim_hdr, 133)) return SIM_FAILED;
+    for (int b = 0; b < SIM_BLOCKS; b++) {
+        if (!sim_put(&s, sim_frames[b], (uint16_t)(sim_sizes[b] + 5))) return SIM_FAILED;
+        if (s.done) return SIM_CUT_SHORT;
+    }
+
+    bool acked = false;
+    for (int tries = 0; tries < SIM_TRIES && !acked; tries++) {
+        sim_reply = 0;
+        if (s.pos++ != lost_at && ymodem_feed(&s.ym, YMODEM_EOT) != YMODEM_OK) {
+            return SIM_FAILED;
+        }
+        if (sim_reply == 0 && use_idle && ymodem_line_idle(&s.ym) != YMODEM_OK) {
+            return SIM_FAILED;
+        }
+        acked = sim_reply == YMODEM_ACK;
+    }
+    if (!acked || !sim_put(&s, sim_end, 133) || !s.done) return SIM_FAILED;
+
+    bool whole = sim_out_len == SIM_FILE_SIZE &&
+                 memcmp(sim_out, sim_file, SIM_FILE_SIZE) == 0;
+    return whole ? SIM_EXACT : SIM_CUT_SHORT;
+}
+
+/* header, data, two EOTs and the end block: this loses each byte once */
+#define SIM_STREAM (133u + SIM_PADDED + SIM_BLOCKS * 5u + 2u + 133u)
+
+TEST(test_sim_line_idle_survives_any_lost_byte)
+{
+    sim_make_file(1);
+    for (uint32_t lost = 0; lost <= SIM_STREAM; lost++) {
+        for (int mode = 0; mode < 4; mode++) {
+            ASSERT_EQ(sim_transfer(true, (mode & 1) != 0, (mode & 2) != 0, lost),
+                      SIM_EXACT);
+        }
+    }
+}
+
+/* Without the timer a lost byte usually fails the transfer, as it always
+ * did, but it must fail out loud. */
+TEST(test_sim_no_timer_never_reports_a_short_file)
+{
+    int exact = 0;
+    sim_make_file(2);
+    for (uint32_t lost = 0; lost <= SIM_STREAM; lost++) {
+        for (int toss = 0; toss < 2; toss++) {
+            int rc = sim_transfer(false, toss != 0, false, lost);
+            ASSERT_TRUE(rc != SIM_CUT_SHORT);
+            if (rc == SIM_EXACT) exact++;
+        }
+    }
+    ASSERT_GT(exact, 0);
+}
+
 TEST(test_block0_longest_name_fits)
 {
     ymodem_t ym;
@@ -918,6 +1304,17 @@ TEST_MAIN("ymodem")
     RUN(test_write_callback_error);
     RUN(test_bad_complement_sends_nak);
     RUN(test_err_crc_constant_and_recovery);
+    RUN(test_lost_byte_data_eots_are_not_an_eot_pair);
+    RUN(test_eot_pair_split_by_data_is_not_a_pair);
+    RUN(test_block_between_eots_restarts_the_pair);
+    RUN(test_line_idle_needs_enable);
+    RUN(test_line_idle_outside_a_transfer_refused);
+    RUN(test_line_idle_holds_the_nak_until_quiet);
+    RUN(test_line_idle_asks_for_block0_with_c);
+    RUN(test_line_idle_drops_a_part_frame);
+    RUN(test_line_idle_splits_cans);
+    RUN(test_sim_line_idle_survives_any_lost_byte);
+    RUN(test_sim_no_timer_never_reports_a_short_file);
     RUN(test_block0_longest_name_fits);
     RUN(test_block0_name_too_long_refused);
     RUN(test_block0_name_without_terminator_refused);

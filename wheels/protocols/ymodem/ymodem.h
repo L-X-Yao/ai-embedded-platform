@@ -83,6 +83,8 @@ typedef struct {
     uint32_t           total_received;
     bool               eot_seen;         /* first EOT received, awaiting second */
     uint8_t            can_count;        /* consecutive CAN bytes received */
+    bool               line_idle_on;     /* caller will call ymodem_line_idle() */
+    bool               purging;          /* frame sync lost, see ymodem_feed() */
 } ymodem_t;
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
@@ -90,12 +92,37 @@ typedef struct {
 /** Initialize receiver state. */
 ymodem_err_t   ymodem_init(ymodem_t *ym, const ymodem_io_t *io);
 
+/** Promise to call ymodem_line_idle() whenever the line goes quiet. Call it
+ *  between ymodem_init() and ymodem_start(); YMODEM_ERR_PARAM after that.
+ *
+ *  From then on a bad block or header gets no NAK at once. Every byte is
+ *  dropped until ymodem_line_idle() reports a quiet line, and the NAK goes
+ *  out then, as ymodem.txt 7.3.2 and 7.4 ask. */
+ymodem_err_t   ymodem_enable_line_idle(ymodem_t *ym);
+
 /** Send initial 'C' handshake to request CRC-mode transfer. */
 ymodem_err_t   ymodem_start(ymodem_t *ym);
 
 /** Feed one received byte. Returns YMODEM_OK while receiving, YMODEM_DONE on
- *  successful completion, or negative error code. */
+ *  successful completion, or negative error code.
+ *
+ *  After a bad block or a byte that cannot start one, the framing is lost:
+ *  the rest of a resent block may be arriving. Without
+ *  ymodem_enable_line_idle() the NAK still goes out at once and blocks are
+ *  still taken, but EOT is refused until a block passes its checks. A resent
+ *  block can then lock onto a 0x01 or 0x02 in its own data on every try, so
+ *  one lost byte usually costs the transfer: the sender gives up. */
 ymodem_err_t   ymodem_feed(ymodem_t *ym, uint8_t byte);
+
+/** Report that nothing has arrived for the quiet period, one second in
+ *  ymodem.txt 7.4. Call it every time that period passes, from the context
+ *  that calls ymodem_feed(), which also has to count how many quiet periods
+ *  in a row mean the sender has gone.
+ *
+ *  Drops a part frame and, if a block was lost, asks for it again: 'C' for
+ *  a block 0, NAK for a data block. Returns YMODEM_OK or the send_byte error.
+ *  YMODEM_ERR_PARAM without ymodem_enable_line_idle() or outside a transfer. */
+ymodem_err_t   ymodem_line_idle(ymodem_t *ym);
 
 /** Get current state. */
 ymodem_state_t ymodem_get_state(const ymodem_t *ym);
