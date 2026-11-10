@@ -4,7 +4,17 @@ GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 
 ## Status
 
-GPIO/USART/Flash/SPI/I2C 五个外设驱动已通过 HIL 验证（600s soak, 0 watchdog reset, 2026-04-26）。CI cross-compile 全绿。代码稳定但未经第二个 GD32F4 项目复验，整体标记 **candidate**。
+**compile-only：这五个外设驱动没有在板子上跑过。** 能确认的只有两件事：
+
+- 在 flybox `vsf_build` 的编译选项下交叉编译通过（arm-none-eabi-gcc，真实 VSF 模板和厂商头文件）。
+- 主机模型（`test/`，见其 README）用真实源码跑手册描述的外设行为。模型不等于芯片。
+
+flybox 的构建把本 port 编进固件目标，但固件不走它：flybox 经 `projects/flybox/vsf_build/compat/gd32f4xx_periph_compat.h` 直接访问硬件。
+查目标文件符号（2026-11-07），port 之外只引用 `vsf_driver_init` 和 `nvic_vector_table_set`，没有代码调用 `vsf_hw_gpio/usart/spi/i2c/flash`。
+port 的中断入口会覆盖启动文件的弱符号，但 flybox 只打开 USART1 中断，处理函数是它自己的。
+所以 2026-04-26 的 600s soak 验证的是 flybox 固件和 compat 层，不是这五个驱动。
+
+有测试在板子上驱动这些外设之后，再改这里的状态。
 
 ## 支持的型号
 
@@ -15,11 +25,11 @@ GPIO/USART/Flash/SPI/I2C 五个外设驱动已通过 HIL 验证（600s soak, 0 w
 
 | 外设 | 状态 | 来源 | 说明 |
 |------|------|------|------|
-| GPIO | HIL verified | 复用 GD32H7XX | 寄存器布局完全一致 |
-| USART | HIL verified | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
-| Flash (FMC) | HIL verified | 改写自 GD32H7XX | 非均匀扇区(16K×4+64K+128K×7)，word 编程 |
-| SPI | HIL verified | 从零编写 | Master/Slave 模式，8/16-bit，FIFO 轮询+中断 |
-| I2C | HIL verified | 从零编写 | Master 事件驱动状态机(EV5/6/7/8)，EV+ER 双中断 |
+| GPIO | compile-only | 复用 GD32H7XX | 寄存器布局完全一致 |
+| USART | compile-only | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
+| Flash (FMC) | compile-only | 改写自 GD32H7XX | 非均匀扇区(16K×4+64K+128K×7)，word 编程 |
+| SPI | compile-only | 从零编写 | Master/Slave 模式，8/16-bit，FIFO 轮询+中断 |
+| I2C | compile-only | 从零编写 | Master 事件驱动状态机(EV5/6/7/8)，EV+ER 双中断 |
 
 ## Why not VSF native?
 
