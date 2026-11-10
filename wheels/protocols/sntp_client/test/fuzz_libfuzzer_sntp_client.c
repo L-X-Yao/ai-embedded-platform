@@ -52,8 +52,9 @@ static void check_packet(const uint8_t *data, fuzz_input_t *in) {
     uint8_t *packet = malloc(SNTP_PACKET_SIZE);
     if (!packet) return;
     memcpy(packet, data, SNTP_PACKET_SIZE);
-    packet[0] = (uint8_t)((packet[0] & 0xF8) | 4);
-    if (packet[1] == 0) packet[1] = 1;
+    packet[0] = (uint8_t)((packet[0] & 0x80) | (4 << 3) | 4);  // LI 0 or 2, VN 4, mode 4
+    if (packet[1] == 0 || packet[1] > 15) packet[1] = 1;
+    packet[47] |= 1;  // a zero Transmit Timestamp is refused
 
     sntp_response_t resp;
     if (sntp_client_parse_response(packet, SNTP_PACKET_SIZE, &resp) != SNTP_CLIENT_OK) {

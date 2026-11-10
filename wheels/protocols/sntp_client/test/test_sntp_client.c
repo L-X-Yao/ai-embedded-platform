@@ -115,6 +115,109 @@ TEST(test_parse_wrong_mode)
     ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_ERR_MODE);
 }
 
+/* ─── what a client must not trust ───────────────────────────── */
+
+/* RFC 4330 section 4: LI 3 is "alarm condition (clock not synchronized)", and
+   strata 16-255 are reserved. Section 5: a reply's stratum is 0-15 and its
+   Transmit Timestamp nonzero. Section 6: VN is copied from the request. */
+
+static void set_li_vn(uint8_t *pkt, uint8_t li, uint8_t vn)
+{
+    pkt[0] = (uint8_t)((li << 6) | (vn << 3) | (pkt[0] & 0x07));
+}
+
+TEST(test_parse_refuses_a_server_that_says_it_is_not_synchronized)
+{
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+
+    build_server_response(pkt, 2, 4, 1000, 2000, 3000, 4000);
+    set_li_vn(pkt, 3, 4);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+              SNTP_CLIENT_ERR_UNSYNC);
+
+    /* 0 is no warning, 1 and 2 announce a leap second: all three carry time */
+    for (uint8_t li = 0; li <= 2; li++) {
+        set_li_vn(pkt, li, 4);
+        ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+        ASSERT_EQ(resp.li, li);
+    }
+}
+
+TEST(test_parse_refuses_the_all_zero_reply_of_a_starting_server)
+{
+    /* Section 6: unsynchronized or first coming up, all timestamps are zero
+       with one exception, the copied Originate Timestamp */
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+    build_server_response(pkt, 2, 4, 0, 2000, 0, 0);
+    set_li_vn(pkt, 3, 4);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+              SNTP_CLIENT_ERR_UNSYNC);
+}
+
+TEST(test_parse_refuses_a_zero_transmit_timestamp)
+{
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+    build_server_response(pkt, 2, 4, 1000, 2000, 3000, 0);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+              SNTP_CLIENT_ERR_UNSYNC);
+
+    /* Only all 64 bits at zero mean unavailable */
+    pkt[47] = 1;
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+}
+
+TEST(test_parse_refuses_a_reserved_stratum)
+{
+    static const uint8_t reserved[] = { 16, 17, 128, 255 };
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+
+    build_server_response(pkt, 1, 4, 1000, 2000, 3000, 4000);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+    build_server_response(pkt, 15, 4, 1000, 2000, 3000, 4000);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+
+    for (size_t i = 0; i < sizeof(reserved); i++) {
+        build_server_response(pkt, reserved[i], 4, 1000, 2000, 3000, 4000);
+        ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+                  SNTP_CLIENT_ERR_UNSYNC);
+    }
+}
+
+TEST(test_parse_takes_only_versions_3_and_4)
+{
+    static const uint8_t refused[] = { 0, 1, 2, 5, 6, 7 };
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+    build_server_response(pkt, 2, 4, 1000, 2000, 3000, 4000);
+
+    set_li_vn(pkt, 0, 3);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+    set_li_vn(pkt, 0, 4);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+
+    for (size_t i = 0; i < sizeof(refused); i++) {
+        set_li_vn(pkt, 0, refused[i]);
+        ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+                  SNTP_CLIENT_ERR_VERSION);
+    }
+}
+
+TEST(test_parse_kiss_comes_before_every_other_check)
+{
+    /* Section 4: discard stratum 0 "regardless of the contents of other fields",
+       and the caller has to see KISS to back off */
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    sntp_response_t resp;
+    build_server_response(pkt, 0, 4, 0, 0, 0, 0);
+    set_li_vn(pkt, 3, 0);
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp),
+              SNTP_CLIENT_ERR_KISS);
+}
+
 /* ─── compute tests ──────────────────────────────────────────── */
 
 TEST(test_compute_zero_offset)
@@ -342,6 +445,12 @@ TEST_MAIN("sntp_client")
     RUN(test_parse_too_short);
     RUN(test_parse_kiss_of_death);
     RUN(test_parse_wrong_mode);
+    RUN(test_parse_refuses_a_server_that_says_it_is_not_synchronized);
+    RUN(test_parse_refuses_the_all_zero_reply_of_a_starting_server);
+    RUN(test_parse_refuses_a_zero_transmit_timestamp);
+    RUN(test_parse_refuses_a_reserved_stratum);
+    RUN(test_parse_takes_only_versions_3_and_4);
+    RUN(test_parse_kiss_comes_before_every_other_check);
     RUN(test_compute_zero_offset);
     RUN(test_compute_positive_offset);
     RUN(test_compute_with_rtt);

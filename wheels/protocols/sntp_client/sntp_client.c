@@ -113,6 +113,16 @@ sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
     out->receive   = rd_ts(&data[32]);
     out->transmit  = rd_ts(&data[40]);
 
+    if (out->version != 3 && out->version != 4) return SNTP_CLIENT_ERR_VERSION;
+
+    /* RFC 4330 section 4: LI 3 is "clock not synchronized", strata from 16 are
+     * reserved, and section 5 wants a nonzero Transmit Timestamp. Check 4 there
+     * prints "LI" among the fields that must not be 0, but its own table allows
+     * 0-3 and 0 is every healthy server, so only 3 is refused. */
+    if (out->li == 3 || out->stratum > 15) return SNTP_CLIENT_ERR_UNSYNC;
+    if (out->transmit.seconds == 0 && out->transmit.fraction == 0)
+        return SNTP_CLIENT_ERR_UNSYNC;
+
     return SNTP_CLIENT_OK;
 }
 

@@ -37,6 +37,9 @@ typedef enum {
     SNTP_CLIENT_ERR_SIZE     = -2,
     SNTP_CLIENT_ERR_KISS     = -3,  /* Kiss-of-Death: stratum 0 */
     SNTP_CLIENT_ERR_MODE     = -4,  /* unexpected mode in response */
+    SNTP_CLIENT_ERR_UNSYNC   = -5,  /* server has no good time to give: LI 3,
+                                     * stratum above 15 or zero Transmit Timestamp */
+    SNTP_CLIENT_ERR_VERSION  = -6,  /* version other than 3 or 4 in response */
 } sntp_client_err_t;
 
 /* ---------- NTP timestamp (64-bit: 32 seconds + 32 fraction) ---------- */
@@ -83,7 +86,11 @@ int sntp_client_build_request(uint8_t *buf, size_t buf_size,
                               const sntp_timestamp_t *tx_time);
 
 /**
- * Parse a 48-byte SNTP response into structured fields.
+ * Parse a 48-byte SNTP response into structured fields, and refuse one a client
+ * must not take time from (RFC 4330 sections 4 and 5). Stratum 0 is reported
+ * first, as SNTP_CLIENT_ERR_KISS, whatever else the packet holds.
+ * After SNTP_CLIENT_ERR_UNSYNC or SNTP_CLIENT_ERR_VERSION out holds every field,
+ * for a log, but its time must not be used.
  * @thread_safe: yes (pure) @isr_safe: yes
  */
 sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
