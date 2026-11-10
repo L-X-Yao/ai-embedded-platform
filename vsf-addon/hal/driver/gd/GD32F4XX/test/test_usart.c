@@ -18,6 +18,7 @@
 typedef struct vsf_hw_usart_t vsf_hw_usart_t;
 extern vsf_hw_usart_t vsf_hw_usart0;
 vsf_err_t vsf_hw_usart_init(vsf_hw_usart_t *u, vsf_usart_cfg_t *c);
+fsm_rt_t vsf_hw_usart_enable(vsf_hw_usart_t *u);
 void vsf_hw_usart_irq_enable(vsf_hw_usart_t *u, vsf_usart_irq_mask_t m);
 uint_fast32_t vsf_hw_usart_rxfifo_read(vsf_hw_usart_t *u, void *b, uint_fast16_t n);
 uint_fast32_t vsf_hw_usart_txfifo_write(vsf_hw_usart_t *u, void *b, uint_fast16_t n);
@@ -27,8 +28,9 @@ static uint32_t regs[0x90 / 4];
 #define CTL0            regs[0x0C / 4]
 #define CTL1            regs[0x10 / 4]
 #define CTL2            regs[0x14 / 4]
+#define BAUD            regs[0x08 / 4]
 
-static uint32_t st0, cell, cell_seen, rise_during_write;
+static uint32_t st0, cell, cell_seen, rise_during_write, baud_ignored;
 static int open_off = -1, st0_read;
 static uint16_t rxdata;
 static int callbacks;
@@ -91,6 +93,9 @@ volatile uint32_t *sim_usart_reg(uint32_t reg, uint32_t off)
         cell = cell_seen = st0;
     } else if (off == OFF_DATA) {
         cell = DATA_TAG | rxdata;
+    } else if ((off == 0x08U) && (CTL0 & USART_CTL0_UEN)) {
+        baud_ignored = BAUD;            /* 19.4.3: not writable with UEN=1 */
+        return (volatile uint32_t *)&baud_ignored;
     } else {
         return (volatile uint32_t *)&regs[off / 4];
     }
@@ -223,10 +228,36 @@ static void test_parity(void)
     CHECK(in9 == 0x1A5);
 }
 
+/* H1-4: BAUD has to match OVSMOD. UCLK 84 MHz, 115200 baud, section 19.3.2:
+ * 16x USARTDIV = 45.57 is 0x2D9, 8x USARTDIV = 91.15 is 0x5B1. */
+static void test_oversample(void)
+{
+    vsf_usart_cfg_t cfg = { .baudrate = 115200 };
+
+    printf("H1-4 oversample 8, then 16, with no fini\n");
+    reset_and_init(VSF_USART_TX_ENABLE | VSF_USART_OVERSAMPLE_8, 115200);
+    CHECK(CTL0 & USART_CTL0_OVSMOD);
+    CHECK(BAUD == 0x5B1);
+    cfg.mode = VSF_USART_TX_ENABLE | VSF_USART_OVERSAMPLE_16;
+    CHECK(vsf_hw_usart_init(U, &cfg) == VSF_ERR_NONE);
+    CHECK(!(CTL0 & USART_CTL0_OVSMOD));
+    CHECK(BAUD == 0x2D9);
+
+    printf("H1-4 init again while the USART is enabled\n");
+    reset_and_init(VSF_USART_TX_ENABLE, 115200);
+    vsf_hw_usart_enable(U);
+    cfg.mode = VSF_USART_TX_ENABLE | VSF_USART_OVERSAMPLE_8;
+    CHECK(vsf_hw_usart_init(U, &cfg) == VSF_ERR_NONE);
+    CHECK(CTL0 & USART_CTL0_OVSMOD);
+    CHECK(BAUD == 0x5B1);
+    CHECK(CTL0 & USART_CTL0_UEN);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
     test_cts();
     test_parity();
+    test_oversample();
     return host_summary("usart");
 }

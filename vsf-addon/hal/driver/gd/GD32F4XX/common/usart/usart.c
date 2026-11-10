@@ -96,7 +96,6 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
         intdiv = udiv & 0x0000FFF0U;
         fradiv = udiv & 0x0000000FU;
     }
-    USART_BAUD(reg) = (USART_BAUD_FRADIV | USART_BAUD_INTDIV) & (intdiv | fradiv);
 
     uint32_t ctl, cfg;
     uint32_t enabled = USART_CTL0(reg) & USART_CTL0_UEN;
@@ -104,10 +103,13 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
         vsf_atom32_op(&USART_CTL0(reg), _ & ~USART_CTL0_UEN);
     }
 
-    // CTL0: REN, TEN, PM, PCEN, WL (direct bit positions in mode)
+    // USART_BAUD cannot be written with UEN set
+    USART_BAUD(reg) = (USART_BAUD_FRADIV | USART_BAUD_INTDIV) & (intdiv | fradiv);
+
+    // CTL0: REN, TEN, PM, PCEN, WL (direct bit positions in mode), OVSMOD
     ctl = USART_CTL0(reg);
     ctl &= ~(USART_CTL0_REN | USART_CTL0_TEN | USART_CTL0_PM
-            | USART_CTL0_PCEN | USART_CTL0_WL);
+            | USART_CTL0_PCEN | USART_CTL0_WL | USART_CTL0_OVSMOD);
     ctl |= mode & __VSF_HW_USART_CTL0_MASK;
     USART_CTL0(reg) = ctl | over8;
 
