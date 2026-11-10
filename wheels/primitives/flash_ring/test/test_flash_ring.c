@@ -1010,6 +1010,137 @@ TEST(test_failed_program_that_did_nothing_keeps_the_slot)
 }
 
 /*
+ * A program that fails, and then a read-back that fails too: nothing says
+ * whether the slot was touched. Counting it as a frame put a blank slot among
+ * the live ones, so it stays outside the ring until a read can tell.
+ */
+TEST(test_failed_program_that_cannot_be_read_back_is_not_counted)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x57, sizeof(frame));
+    g_fail_write = true;
+    g_fail_read = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_fail_write = false;
+    g_fail_read = false;
+    ASSERT_EQ(0u, ring.write_idx);
+    ASSERT_EQ(0u, flash_ring_count(&ring));
+
+    /* The slot reads blank now, so the retry takes it */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(1u, flash_ring_count(&ring));
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 0, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x57, buf[0]);
+    ASSERT_EQ(0, g_overprogram);
+
+    /* Checked once: a push on a slot known to be blank reads nothing */
+    int reads = g_read_count;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(reads, g_read_count);
+}
+
+/*
+ * The same with a program that did land. The next push has to find that out
+ * before it programs, so it reads the slot first and waits while that fails.
+ */
+TEST(test_unread_slot_is_checked_before_the_next_program)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x55, sizeof(frame));
+    g_write_lands_then_fails = true;
+    g_fail_read = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_write_lands_then_fails = false;
+
+    memset(frame, 0xAA, sizeof(frame));
+    int writes = g_write_count;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(writes, g_write_count);
+
+    g_fail_read = false;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+    ASSERT_EQ(2u, flash_ring_count(&ring));
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 0, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x55, buf[0]);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 1, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0xAA, buf[0]);
+}
+
+/*
+ * What the blank slot cost. Left behind on the last slot of a sector, it is
+ * where a reset stopped looking, so the frames stored after it were hidden and
+ * the next push erased them.
+ */
+TEST(test_reset_after_an_unread_failed_program_finds_later_frames)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;      /* the header stays at slot 0 */
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x11, sizeof(frame));
+    for (uint32_t i = 0; i + 1u < MOCK_SLOTS_PER_SECTOR; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+
+    g_fail_write = true;                /* on the last slot of the sector */
+    g_fail_read = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_fail_write = false;
+    g_fail_read = false;
+
+    memset(frame, 0x22, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(ring.write_idx, after.write_idx);
+    ASSERT_EQ(flash_ring_count(&ring), flash_ring_count(&after));
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    for (uint32_t i = 0; i < flash_ring_count(&after); i++) {
+        ASSERT_EQ(FLASH_RING_OK,
+                  flash_ring_peek(&after, after.read_idx + i, buf, MOCK_SLOT_SIZE));
+        ASSERT_TRUE(buf[0] != 0xFF);
+    }
+}
+
+/* A reset forgets the unread slot: init reads the flash for itself. */
+TEST(test_init_forgets_an_unread_slot)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x58};
+    g_fail_write = true;
+    g_fail_read = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_fail_write = false;
+    g_fail_read = false;
+
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+    g_fail_read = true;                 /* nothing left to check */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(1u, flash_ring_count(&ring));
+}
+
+/*
  * The erase-on-entry code cleared a sector on entering it and left read_idx
  * alone, so it can leave read_idx ahead of write_idx in the blank tail.
  */
@@ -1331,6 +1462,10 @@ TEST_MAIN("flash_ring")
     RUN(test_flush_stays_due_at_the_largest_interval);
     RUN(test_failed_program_that_landed_is_left_behind);
     RUN(test_failed_program_that_did_nothing_keeps_the_slot);
+    RUN(test_failed_program_that_cannot_be_read_back_is_not_counted);
+    RUN(test_unread_slot_is_checked_before_the_next_program);
+    RUN(test_reset_after_an_unread_failed_program_finds_later_frames);
+    RUN(test_init_forgets_an_unread_slot);
     RUN(test_old_ring_with_read_idx_in_the_blank_tail);
     RUN(test_old_full_ring_keeps_the_newest_frames);
     RUN(test_reset_walks_past_an_all_ff_frame);

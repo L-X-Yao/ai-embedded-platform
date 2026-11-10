@@ -61,6 +61,7 @@ typedef struct {
     uint32_t               read_idx;  /* read-only for callers: slot of the oldest frame */
     uint32_t               frame_count; /* internal: monotonic total writes */
     uint16_t               since_flush; /* internal */
+    bool                   check_slot;  /* internal: write_idx slot not read back */
 } flash_ring_t;
 
 /* ---------- API ---------- */

@@ -56,7 +56,9 @@ static uint32_t slot_addr(const flash_ring_t *ring, uint32_t idx)
  * slot at write_idx and the rest of its sector are blank. So it erases the next
  * sector just before it programs the last slot of the current one. That gives
  * init a blank slot to look for, and it means write_idx == read_idx only ever
- * says the ring is empty.
+ * says the ring is empty. The one exception is check_slot: a program failed
+ * and the read-back failed too, so the slot at write_idx may hold anything
+ * until the next push has read it.
  */
 
 #define ERASED_BYTE 0xFFu
@@ -275,6 +277,7 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
     ring->io  = io;
     ring->cfg = *cfg;
     ring->since_flush = 0;
+    ring->check_slot  = false;
 
     /* Try to load existing header from flash */
     flash_ring_hdr_t hdr;
@@ -318,6 +321,19 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
 
     const flash_ring_io_t *io = ring->io;
 
+    /* The last program failed and its slot could not be read back. Find out
+     * what is there before anything is programmed again. */
+    if (ring->check_slot) {
+        bool blank = false;
+        if (tail_blank(ring, ring->write_idx, &blank) != FLASH_RING_OK) {
+            return FLASH_RING_ERR_IO;
+        }
+        ring->check_slot = false;
+        if (!blank) {
+            advance_write(ring);
+        }
+    }
+
     /* Before the last slot, not after it: a cut in between keeps the rule. */
     if (last_in_sector(ring, ring->write_idx)) {
         uint32_t next = next_sector_start(ring, ring->write_idx);
@@ -328,10 +344,17 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
     }
 
     if (io->write(io->ctx, slot_addr(ring, ring->write_idx), frame, len) != 0) {
-        /* The program may have landed anyway, and cells that are not blank
-         * cannot be programmed again: leave such a slot behind. */
+        /*
+         * The program may have landed anyway, and cells that are not blank
+         * cannot be programmed again: leave such a slot behind. A slot that
+         * cannot be read either is not counted as a frame, or a blank one
+         * could sit among the live slots and stop init's walk short. It stays
+         * at write_idx until the next push has read it.
+         */
         bool blank = false;
-        if (tail_blank(ring, ring->write_idx, &blank) != FLASH_RING_OK || !blank) {
+        if (tail_blank(ring, ring->write_idx, &blank) != FLASH_RING_OK) {
+            ring->check_slot = true;
+        } else if (!blank) {
             advance_write(ring);
         }
         return FLASH_RING_ERR_IO;
