@@ -84,7 +84,7 @@ typedef struct {
 typedef struct {
     boot_counter_storage_t storage;         /* injected callbacks */
     boot_counter_record_t  record;          /* cached persistent data */
-    uint32_t               uptime_seconds;  /* runtime uptime counter */
+    volatile uint32_t      uptime_seconds;  /* written by tick_second, read anywhere */
     bool                   loaded;          /* true after successful load */
     boot_counter_storage_read_fn  read2;    /* second copy, NULL if none */
     boot_counter_storage_write_fn write2;
@@ -125,10 +125,10 @@ boot_counter_err_t boot_counter_load(boot_counter_t *ctx);
  *  Increment boot count and save to persistent storage. */
 boot_counter_err_t boot_counter_increment(boot_counter_t *ctx);
 
-/** @thread_safe: yes (read-only, atomic uint32_t) */
+/** @thread_safe: no (caller serializes with load and increment) */
 uint32_t boot_counter_get_count(const boot_counter_t *ctx);
 
-/** @thread_safe: yes (read-only, atomic uint32_t) */
+/** @thread_safe: no (caller serializes with load and set_reset_reason) */
 uint32_t boot_counter_get_reset_reason(const boot_counter_t *ctx);
 
 /** @thread_safe: no (caller serializes)
@@ -136,11 +136,15 @@ uint32_t boot_counter_get_reset_reason(const boot_counter_t *ctx);
 boot_counter_err_t boot_counter_set_reset_reason(boot_counter_t *ctx,
                                                   uint32_t reason);
 
-/** @thread_safe: yes (read-only, atomic uint32_t) */
+/** @thread_safe: yes, from any context while tick_second runs on a 32-bit
+ *  core such as Cortex-M: one volatile load of an aligned word, so it cannot
+ *  tear and is not hoisted out of a wait loop. It orders nothing else. */
 uint32_t boot_counter_get_uptime_seconds(const boot_counter_t *ctx);
 
-/** @thread_safe: no (caller serializes)
- *  Call once per second to increment uptime counter. */
+/** @thread_safe: no (one context only, and a timer ISR is fine)
+ *  Call once per second to increment uptime counter. The increment is a
+ *  read, an add and a write, so two contexts must not both call this.
+ *  Start the timer after boot_counter_init(), which clears the counter. */
 void boot_counter_tick_second(boot_counter_t *ctx);
 
 #ifdef __cplusplus

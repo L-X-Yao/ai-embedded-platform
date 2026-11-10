@@ -162,6 +162,15 @@ TEST(test_reset_reason)
     ASSERT_EQ(boot_counter_get_reset_reason(&ctx2), 0x04);
 }
 
+/* A timer writes this field and any context may read it. Without volatile,
+ * -flto hoists the read out of a wait loop, and a unit test cannot show a
+ * hang, so pin the type: the pointer type keeps the qualifier to compare. */
+TEST(test_uptime_field_is_volatile)
+{
+    ASSERT_TRUE(__builtin_types_compatible_p(
+        __typeof__(&((boot_counter_t *)0)->uptime_seconds), volatile uint32_t *));
+}
+
 TEST(test_uptime_ticks)
 {
     mock_reset();
@@ -826,6 +835,7 @@ TEST_MAIN("boot_counter")
     RUN(test_increment);
     RUN(test_multiple_increments);
     RUN(test_reset_reason);
+    RUN(test_uptime_field_is_volatile);
     RUN(test_uptime_ticks);
     RUN(test_storage_read_failure);
     RUN(test_storage_write_failure);
