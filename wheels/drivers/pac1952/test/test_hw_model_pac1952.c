@@ -31,6 +31,70 @@ static void setup(void)
     (void)pac1952_init(&dev, &model_i2c, &default_cfg);
 }
 
+/* Table 6-1, p37: the ADDRSEL resistor picks 0x10 to 0x1F, and every access has
+ * to go there. */
+TEST(test_addr_reaches_every_bus_access)
+{
+    pac1952_cfg_t cfg = default_cfg;
+    pac1952_channel_t one;
+    pac1952_channel_t two;
+    uint8_t id = 0;
+
+    pac1952_model_init(&model);
+    model.addr = 0x1F;
+    cfg.addr = 0x1F;
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_OK);
+    ASSERT_EQ(pac1952_refresh(&dev), PAC1952_OK);
+    ASSERT_EQ(pac1952_read_channel(&dev, 0, &one), PAC1952_OK);
+    ASSERT_EQ(pac1952_read_both(&dev, &one, &two), PAC1952_OK);
+    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_8SPS), PAC1952_OK);
+    ASSERT_EQ(pac1952_get_product_id(&dev, &id), PAC1952_OK);
+    ASSERT_TRUE(id == PAC1952_PRODUCT_ID_VAL || id == PAC1952_PRODUCT_ID_VAL_2);
+}
+
+/* A config written before the field exists has 0 in it: the old fixed address. */
+TEST(test_addr_0_is_the_old_fixed_address)
+{
+    pac1952_model_init(&model);
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &default_cfg), PAC1952_OK);
+    ASSERT_EQ(pac1952_refresh(&dev), PAC1952_OK);
+    ASSERT_EQ(model.refresh_count, 1);
+}
+
+/* Both ends of the table, and a chip elsewhere does not answer. */
+TEST(test_addr_is_used_as_given)
+{
+    pac1952_cfg_t cfg = default_cfg;
+
+    pac1952_model_init(&model);
+    cfg.addr = 0x10;
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_OK);
+
+    pac1952_model_init(&model);
+    model.addr = 0x15;
+    cfg.addr = 0;
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_ERR_I2C);
+    cfg.addr = 0x16;
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_ERR_I2C);
+    cfg.addr = 0x15;
+    ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_OK);
+}
+
+/* No resistor gives anything outside the table, so such a value is a mistake */
+TEST(test_addr_outside_the_table_is_refused)
+{
+    static const uint8_t bad[] = { 0x01, 0x0F, 0x20, 0x7F, 0xFF };
+    pac1952_cfg_t cfg = default_cfg;
+
+    for (size_t i = 0; i < sizeof(bad); i++) {
+        pac1952_model_init(&model);
+        model.addr = bad[i];
+        cfg.addr = bad[i];
+        ASSERT_EQ(pac1952_init(&dev, &model_i2c, &cfg), PAC1952_ERR_PARAM);
+        ASSERT_EQ(pac1952_refresh(&dev), PAC1952_ERR_PARAM);
+    }
+}
+
 /* --- init --------------------------------------------------------------- */
 
 TEST(test_init_only_reads)
@@ -307,6 +371,10 @@ TEST(test_model_refresh_v_acts_like_refresh)
 }
 
 TEST_MAIN("pac1952 hardware model")
+    RUN(test_addr_reaches_every_bus_access);
+    RUN(test_addr_0_is_the_old_fixed_address);
+    RUN(test_addr_is_used_as_given);
+    RUN(test_addr_outside_the_table_is_refused);
     RUN(test_init_only_reads);
     RUN(test_refresh_is_one_send_byte);
     RUN(test_refresh_waits_out_the_window);

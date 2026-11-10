@@ -53,7 +53,8 @@ typedef struct {
 
 /* ---------- constants ---------- */
 
-#define PAC1952_DEV_ADDR        0x10u
+#define PAC1952_DEV_ADDR        0x10u   /* ADDRSEL to GND, and what cfg.addr 0 means */
+#define PAC1952_DEV_ADDR_MAX    0x1Fu   /* ADDRSEL tied to VDD */
 
 #define PAC1952_PRODUCT_ID_VAL    0x79u   /* PRODUCT_ID of a PAC1952-1 */
 #define PAC1952_PRODUCT_ID_VAL_2  0x7Du   /* PRODUCT_ID of a PAC1952-2 */
@@ -80,6 +81,8 @@ typedef struct {
 
 typedef struct {
     float sense_resistor_mohm[2]; /* sense resistor per channel (milliohms) */
+    uint8_t addr;   /* what the ADDRSEL resistor picks, 0x10 to 0x1F (Table 6-1).
+                     * 0 means 0x10, so a config without this field stays as it was */
 } pac1952_cfg_t;
 
 /* ---------- device context ---------- */

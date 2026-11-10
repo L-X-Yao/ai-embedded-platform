@@ -4,7 +4,8 @@
  *
  * Models Microchip PAC1952 from DS20006539E (PDF page numbers) at bus
  * level, so tests see the exact bytes:
- * - Client address 0x10, the ADDRSEL-to-GND case (Table 6-1, p37)
+ * - Client address 0x10, the ADDRSEL-to-GND case (Table 6-1, p37), or another
+ *   of that table set in addr
  * - 0x00 REFRESH and 0x1F REFRESH_V are commands: "No Data in this
  *   command, Send Byte only" (p47, p56)
  * - A REFRESH latches the readable registers and puts CTRL into effect
@@ -60,6 +61,7 @@ typedef struct {
 /* --- Simulated chip and physical environment --- */
 typedef struct {
     hw_reg_model_t hw;              /* failure injection only */
+    uint8_t  addr;                  /* picked by ADDRSEL at power-up */
     uint16_t ctrl;                  /* 0x01, as written */
     uint16_t ctrl_act;              /* 0x21, in effect */
     uint16_t true_vbus[2];          /* raw 16-bit unsigned, measured now */
@@ -93,7 +95,7 @@ static bool pac1952_model_write_raw(void *ctx, uint8_t dev_addr,
     pac1952_model_t *m = (pac1952_model_t *)ctx;
 
     if (hw_model__should_fail(&m->hw)) return false;
-    if (dev_addr != PAC_MODEL_ADDR) return false;
+    if (dev_addr != m->addr) return false;
 
     if (m->write_count < PAC_MODEL_LOG_MAX) {
         pac1952_model_frame_t *f = &m->writes[m->write_count];
@@ -136,7 +138,7 @@ static bool pac1952_model_read_regs(void *ctx, uint8_t dev_addr,
     uint16_t val;
 
     if (hw_model__should_fail(&m->hw)) return false;
-    if (dev_addr != PAC_MODEL_ADDR) return false;
+    if (dev_addr != m->addr) return false;
     if (m->busy_ms != 0) return false;
 
     switch (reg) {
@@ -173,6 +175,7 @@ static void pac1952_model_init(pac1952_model_t *m)
     memset(m, 0, sizeof(*m));
     hw_model_init(&m->hw);
 
+    m->addr     = PAC_MODEL_ADDR;
     m->ctrl     = PAC_MODEL_CTRL_POR;
     m->ctrl_act = PAC_MODEL_CTRL_POR;
 
