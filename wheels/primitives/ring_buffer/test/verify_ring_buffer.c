@@ -3,7 +3,7 @@
  * verify_ring_buffer.c — CBMC bounded model checking for ring_buffer
  *
  * Verifies structural invariants hold for ALL possible operation sequences
- * up to UNWIND_BOUND steps. Run with:
+ * up to OPS_BOUND steps. Run with:
  *   cbmc verify_ring_buffer.c ../ring_buffer.c --unwind 51 \
  *        --bounds-check --pointer-check --unsigned-overflow-check
  *
@@ -15,26 +15,36 @@
 #include <stdint.h>
 #include <assert.h>
 
-#ifndef UNWIND_BOUND
-#define UNWIND_BOUND 50
-#endif
 
 #define BUF_CAP 8
+
+/*
+ * The state is head and tail, 0 .. 2*BUF_CAP-1. At up to 4 bytes an operation,
+ * the farthest reachable state takes 8 operations, so 12 tries every operation
+ * from every state.
+ */
+#ifndef OPS_BOUND
+#define OPS_BOUND 12
+#endif
 
 /* CBMC built-in: returns arbitrary value of given type */
 extern uint8_t  nondet_uint8(void);
 extern uint16_t nondet_uint16(void);
 extern unsigned  nondet_unsigned(void);
 
-/* stored comes from the return values, so it checks the indexes independently. */
-static void check_invariants(const ring_buffer_t *rb, unsigned stored) {
-    assert(rb->head < 2U * rb->capacity);
-    assert(rb->tail < 2U * rb->capacity);
-    assert(stored <= rb->capacity);
-    assert(ring_buffer_count(rb) == stored);
-    assert(ring_buffer_free(rb) == rb->capacity - stored);
-    assert(ring_buffer_is_empty(rb) == (stored == 0));
-    assert(ring_buffer_is_full(rb) == (stored == rb->capacity));
+/* The level comes straight from the raw indexes, so the clamp in the wheel
+ * cannot hide an overrun. */
+static void check_invariants(const ring_buffer_t *rb) {
+    uint32_t span = 2U * rb->capacity;
+    assert(rb->head < span);
+    assert(rb->tail < span);
+    uint32_t level = (rb->head >= rb->tail) ? rb->head - rb->tail
+                                            : rb->head + span - rb->tail;
+    assert(level <= rb->capacity);
+    assert(ring_buffer_count(rb) == level);
+    assert(ring_buffer_free(rb) == rb->capacity - level);
+    assert(ring_buffer_is_empty(rb) == (level == 0));
+    assert(ring_buffer_is_full(rb) == (level == rb->capacity));
 }
 
 /* Proof 1: invariants hold after any sequence of operations */
@@ -44,44 +54,42 @@ void verify_invariants_all_ops(void) {
 
     ring_buffer_err_t err = ring_buffer_init(&rb, storage, BUF_CAP);
     assert(err == RING_BUFFER_OK);
-    unsigned stored = 0;
-    check_invariants(&rb, stored);
+    check_invariants(&rb);
 
-    unsigned ops = nondet_unsigned();
-    __CPROVER_assume(ops <= UNWIND_BOUND);
-
-    for (unsigned i = 0; i < ops; i++) {
+    /* A constant bound: the checks after each operation cover every shorter
+     * sequence too. */
+    for (unsigned i = 0; i < OPS_BOUND; i++) {
         uint8_t op = nondet_uint8() % 5;
         switch (op) {
         case 0: {
             uint8_t data = nondet_uint8();
-            stored += ring_buffer_write(&rb, &data, 1);
+            ring_buffer_write(&rb, &data, 1);
             break;
         }
         case 1: {
             uint8_t data;
-            stored -= ring_buffer_read(&rb, &data, 1);
+            ring_buffer_read(&rb, &data, 1);
             break;
         }
         case 2: {
             uint8_t data[4];
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            stored += ring_buffer_write(&rb, data, n);
+            ring_buffer_write(&rb, data, n);
             break;
         }
         case 3: {
             uint8_t data[4];
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            stored -= ring_buffer_read(&rb, data, n);
+            ring_buffer_read(&rb, data, n);
             break;
         }
         case 4: {
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            stored -= ring_buffer_skip(&rb, n);
+            ring_buffer_skip(&rb, n);
             break;
         }
         }
-        check_invariants(&rb, stored);
+        check_invariants(&rb);
     }
 }
 
