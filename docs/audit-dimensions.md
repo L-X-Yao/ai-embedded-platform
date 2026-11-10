@@ -243,3 +243,6 @@ tooling/session/dispatch_agent.sh --merge-all --push
 | 2026-05-02 | 代码规范审计（85 wheel vs api-conventions） | 14+9+6 | 进行中 | 14 命名前缀（10 接受偏离+4 修复）、9 @thread_safe 缺失、6 文件头不完整 |
 | 2026-05-04 | 审计系统 v4 构建 + 全量审计 | 4 bug | 4 | i2c_scan 越界读 + fixed_point/bme680 UB（sanitizer + 属性测试发现） |
 | 2026-05-04 | 超级审计九轮（4 路并行：W1+W2+W3+T1/C1/B1） | 9C+26M+13m | 35 | soft_timer slot 复用/mqtt5 truncation/http 4-digit status/bme680 timeout/mcp2515 EID mask/CI push loop/merge_agents scoping/6 模块 counter 饱和 |
+| 2026-11-05 | libFuzzer 25→57 目标 + 公开镜像首次 Nightly | 30+ | 30+ | base64/cobs/slip 编码越界、heatshrink 流损坏、mqtt5 CONNECT 长度、modbus_tcp 长度回绕，见 known-issues |
+| 2026-11-05~06 | Datasheet 逐寄存器核对（四批，104 个驱动） | 515 确认 | 驱动代码 296 条中不需改 HAL 或大改的已修 | 模型 219 条只修了驱动修复用到的；全部未上真机 |
+| 2026-11-06~07 | 超级审计十轮（20 个切片，H1/S1/D1 重跑） | 36C+250M+223m | C、M 已处理，例外见 known-issues 开头 | 每个修复先写失败测试；含 45 项经批准的 API 变更；minor 只记录 |
