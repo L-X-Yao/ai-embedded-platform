@@ -30,6 +30,8 @@
 #define T_RDLOW        6  /* read initiate low time                        */
 #define T_RDSAMPLE     9  /* additional delay before sample (6+9 = 15us)   */
 #define T_RDRELEASE   45  /* remainder of slot after sample                */
+#define T_IDLE_STEP    2  /* poll step while waiting for the line to rise  */
+#define IDLE_TRIES   125  /* 125 * 2us = 250us before calling the line low */
 
 /* ---------- internal helpers ---------- */
 
@@ -88,6 +90,21 @@ static bool read_bit(const onewire_gpio_t *g)
     return val;
 }
 
+/*
+ * Wait for the line to sit high. On a loaded bus it can still be rising after
+ * the last slot, so one low read is not a fault: only a low that lasts is.
+ */
+static bool wait_idle_high(const onewire_gpio_t *g)
+{
+    for (uint8_t i = 0; i < IDLE_TRIES; i++) {
+        if (bus_read(g)) {
+            return true;
+        }
+        bus_delay(g, T_IDLE_STEP);
+    }
+    return false;
+}
+
 /* ---------- public API ---------- */
 
 onewire_err_t onewire_init(onewire_t *bus, const onewire_gpio_t *gpio)
@@ -120,6 +137,15 @@ onewire_err_t onewire_reset(onewire_t *bus, bool *presence)
 
     const onewire_gpio_t *g = bus->gpio;
 
+    if (presence != NULL) {
+        *presence = false;
+    }
+
+    /* A line that is already low would read as a presence pulse below */
+    if (!wait_idle_high(g)) {
+        return ONEWIRE_ERR_BUS;
+    }
+
     /* Master reset pulse: pull low for >= 480us */
     bus_low(g);
     bus_delay(g, T_RSTL);
@@ -138,7 +164,7 @@ onewire_err_t onewire_reset(onewire_t *bus, bool *presence)
         *presence = present;
     }
 
-    return ONEWIRE_OK;
+    return present ? ONEWIRE_OK : ONEWIRE_ERR_PRESENCE;
 }
 
 onewire_err_t onewire_write_byte(onewire_t *bus, uint8_t byte)
@@ -274,6 +300,15 @@ onewire_err_t onewire_read_rom(onewire_t *bus, uint8_t rom[8])
     uint8_t crc = onewire_crc8(rom, 7);
     if (crc != rom[7]) {
         return ONEWIRE_ERR_CRC;
+    }
+
+    /* CRC-8 of zeros is 0, so a line held low gets this far */
+    uint8_t any_bit = 0;
+    for (uint8_t i = 0; i < 8; i++) {
+        any_bit |= rom[i];
+    }
+    if (any_bit == 0) {
+        return ONEWIRE_ERR_BUS;
     }
 
     return ONEWIRE_OK;

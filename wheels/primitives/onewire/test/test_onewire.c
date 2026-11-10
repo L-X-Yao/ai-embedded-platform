@@ -139,6 +139,16 @@ static onewire_t make_bus(void)
     return bus;
 }
 
+/* Script a reset: the idle check before the pulse, then the presence sample.
+ * Both are line levels, true = high. */
+static void mock_set_reset_reads(bool idle, bool presence_line)
+{
+    g_read_values[0] = idle;
+    g_read_values[1] = presence_line;
+    g_read_len = 2;
+    g_read_idx = 0;
+}
+
 /* ========== init tests ========== */
 
 TEST(test_init_null_bus)
@@ -221,10 +231,8 @@ TEST(test_reset_uninit_bus)
 TEST(test_reset_presence_detected)
 {
     onewire_t bus = make_bus();
-    /* Device present: line reads low during presence window */
-    g_read_values[0] = false; /* low = device present */
-    g_read_len = 1;
-    g_read_idx = 0;
+    /* Device present: idle high, then low during the presence window */
+    mock_set_reset_reads(true, false);
 
     bool presence = false;
     ASSERT_EQ(ONEWIRE_OK, onewire_reset(&bus, &presence));
@@ -235,50 +243,90 @@ TEST(test_reset_no_presence)
 {
     onewire_t bus = make_bus();
     /* No device: line stays high */
-    g_read_values[0] = true; /* high = no device */
-    g_read_len = 1;
-    g_read_idx = 0;
+    mock_set_reset_reads(true, true);
 
-    bool presence = false;
-    ASSERT_EQ(ONEWIRE_OK, onewire_reset(&bus, &presence));
+    bool presence = true;
+    ASSERT_EQ(ONEWIRE_ERR_PRESENCE, onewire_reset(&bus, &presence));
     ASSERT_FALSE(presence);
+}
+
+TEST(test_reset_no_presence_without_presence_ptr)
+{
+    onewire_t bus = make_bus();
+    mock_set_reset_reads(true, true);
+
+    /* With no out parameter the return value is all a caller has. */
+    ASSERT_EQ(ONEWIRE_ERR_PRESENCE, onewire_reset(&bus, NULL));
 }
 
 TEST(test_reset_null_presence_ptr)
 {
     onewire_t bus = make_bus();
-    mock_set_reads(false, 1); /* device present */
+    mock_set_reset_reads(true, false); /* device present */
     /* Must not crash with NULL presence pointer */
     ASSERT_EQ(ONEWIRE_OK, onewire_reset(&bus, NULL));
+}
+
+TEST(test_reset_bus_held_low)
+{
+    onewire_t bus = make_bus();
+    mock_set_reads(false, READ_MAX); /* shorted: every read is low */
+
+    bool presence = true;
+    ASSERT_EQ(ONEWIRE_ERR_BUS, onewire_reset(&bus, &presence));
+    ASSERT_FALSE(presence);
+
+    /* The pulse is pointless on a low line and is not sent. */
+    for (uint16_t i = 0; i < g_ops_idx; i++) {
+        ASSERT_TRUE(g_ops[i].type != OP_LOW);
+    }
+}
+
+TEST(test_reset_waits_for_a_slow_line)
+{
+    onewire_t bus = make_bus();
+
+    /* A loaded bus can still be rising after the last slot: low a few
+     * times, then high, then a real presence pulse. */
+    mock_set_reads(false, 5);
+    g_read_values[5] = true;
+    g_read_values[6] = false;
+    g_read_len = 7;
+
+    bool presence = false;
+    ASSERT_EQ(ONEWIRE_OK, onewire_reset(&bus, &presence));
+    ASSERT_TRUE(presence);
 }
 
 TEST(test_reset_timing)
 {
     /*
      * Reset sequence must have:
-     * 1. pin_low
-     * 2. delay >= 480us (reset low)
-     * 3. pin_release
-     * 4. delay (presence detect wait)
-     * 5. pin_read (sample presence)
-     * 6. delay (remainder of reset high)
+     * 1. pin_read (line idle high)
+     * 2. pin_low
+     * 3. delay >= 480us (reset low)
+     * 4. pin_release
+     * 5. delay (presence detect wait)
+     * 6. pin_read (sample presence)
+     * 7. delay (remainder of reset high)
      */
     onewire_t bus = make_bus();
-    mock_set_reads(false, 1);
+    mock_set_reset_reads(true, false);
 
     bool presence = false;
     onewire_reset(&bus, &presence);
 
     /* Check operation sequence */
-    ASSERT_EQ(OP_LOW, g_ops[0].type);
-    ASSERT_EQ(OP_DELAY, g_ops[1].type);
-    ASSERT_EQ(480, g_ops[1].delay_us);
-    ASSERT_EQ(OP_RELEASE, g_ops[2].type);
-    ASSERT_EQ(OP_DELAY, g_ops[3].type);
-    ASSERT_EQ(60, g_ops[3].delay_us);
-    ASSERT_EQ(OP_READ, g_ops[4].type);
-    ASSERT_EQ(OP_DELAY, g_ops[5].type);
-    ASSERT_EQ(420, g_ops[5].delay_us); /* 480 - 60 */
+    ASSERT_EQ(OP_READ, g_ops[0].type);
+    ASSERT_EQ(OP_LOW, g_ops[1].type);
+    ASSERT_EQ(OP_DELAY, g_ops[2].type);
+    ASSERT_EQ(480, g_ops[2].delay_us);
+    ASSERT_EQ(OP_RELEASE, g_ops[3].type);
+    ASSERT_EQ(OP_DELAY, g_ops[4].type);
+    ASSERT_EQ(60, g_ops[4].delay_us);
+    ASSERT_EQ(OP_READ, g_ops[5].type);
+    ASSERT_EQ(OP_DELAY, g_ops[6].type);
+    ASSERT_EQ(420, g_ops[6].delay_us); /* 480 - 60 */
 
     /* Total delay: 480 + 60 + 420 = 960us */
     ASSERT_EQ(960, g_total_delay_us);
@@ -605,6 +653,45 @@ TEST(test_read_rom_bad_crc)
     ASSERT_EQ(ONEWIRE_ERR_CRC, onewire_read_rom(&bus, rom));
 }
 
+TEST(test_read_rom_all_zero_is_refused)
+{
+    /* CRC-8 of seven zero bytes is 0, so a line held low passes the CRC.
+     * 0x00 is no family code: the bytes come from the short, not a device. */
+    onewire_t bus = make_bus();
+    mock_set_reads(false, 64);
+
+    uint8_t rom[8] = {0};
+    ASSERT_EQ(0, onewire_crc8(rom, 7));
+    ASSERT_EQ(ONEWIRE_ERR_BUS, onewire_read_rom(&bus, rom));
+}
+
+TEST(test_read_rom_with_no_device_fails_the_crc)
+{
+    /* The opposite fault: a line that stays high reads as all ones. */
+    onewire_t bus = make_bus();
+    mock_set_reads(true, 64);
+
+    uint8_t rom[8] = {0};
+    ASSERT_EQ(ONEWIRE_ERR_CRC, onewire_read_rom(&bus, rom));
+}
+
+TEST(test_read_rom_zero_serial_is_not_refused)
+{
+    /* Only the whole ROM being zero means a stuck line. */
+    onewire_t bus = make_bus();
+    uint8_t rom_data[8] = {0x28, 0, 0, 0, 0, 0, 0, 0};
+    rom_data[7] = onewire_crc8(rom_data, 7);
+
+    uint16_t offset = 0;
+    for (int b = 0; b < 8; b++) {
+        mock_set_read_byte(rom_data[b], offset);
+        offset += 8;
+    }
+
+    uint8_t rom[8] = {0};
+    ASSERT_EQ(ONEWIRE_OK, onewire_read_rom(&bus, rom));
+}
+
 /* ========== CRC-8 tests ========== */
 
 TEST(test_crc8_null)
@@ -745,7 +832,7 @@ TEST(test_full_ds18b20_convert_sequence)
      */
     onewire_t bus = make_bus();
     /* Set presence response for reset */
-    mock_set_reads(false, 1); /* device present */
+    mock_set_reset_reads(true, false); /* device present */
 
     bool presence = false;
     ASSERT_EQ(ONEWIRE_OK, onewire_reset(&bus, &presence));
@@ -800,7 +887,10 @@ TEST_MAIN("onewire")
     RUN(test_reset_uninit_bus);
     RUN(test_reset_presence_detected);
     RUN(test_reset_no_presence);
+    RUN(test_reset_no_presence_without_presence_ptr);
     RUN(test_reset_null_presence_ptr);
+    RUN(test_reset_bus_held_low);
+    RUN(test_reset_waits_for_a_slow_line);
     RUN(test_reset_timing);
     /* write_byte */
     RUN(test_write_byte_null_bus);
@@ -838,6 +928,9 @@ TEST_MAIN("onewire")
     RUN(test_read_rom_null_rom);
     RUN(test_read_rom_valid_crc);
     RUN(test_read_rom_bad_crc);
+    RUN(test_read_rom_all_zero_is_refused);
+    RUN(test_read_rom_with_no_device_fails_the_crc);
+    RUN(test_read_rom_zero_serial_is_not_refused);
     /* CRC-8 */
     RUN(test_crc8_null);
     RUN(test_crc8_empty);

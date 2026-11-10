@@ -26,6 +26,7 @@ typedef enum {
     ONEWIRE_ERR_PARAM    = -1,
     ONEWIRE_ERR_PRESENCE = -2, /* no device responded to reset */
     ONEWIRE_ERR_CRC      = -3,
+    ONEWIRE_ERR_BUS      = -4, /* line held low: a short or a stuck device */
 } onewire_err_t;
 
 /* ---------- GPIO HAL injection ---------- */
@@ -56,7 +57,12 @@ typedef struct {
 /** Initialize bus instance. @thread_safe: no @isr_safe: no */
 onewire_err_t onewire_init(onewire_t *bus, const onewire_gpio_t *gpio);
 
-/** Reset bus and detect presence. @thread_safe: no @isr_safe: no */
+/** Reset bus and detect presence. Returns ONEWIRE_OK only when a device
+ *  answered, ONEWIRE_ERR_PRESENCE when none did, and ONEWIRE_ERR_BUS when the
+ *  line stayed low for 250us before the pulse: it would read as a presence
+ *  pulse, so no pulse is sent. presence may be NULL; if not, it is true only
+ *  with ONEWIRE_OK and is left alone only by ONEWIRE_ERR_PARAM.
+ *  @thread_safe: no @isr_safe: no */
 onewire_err_t onewire_reset(onewire_t *bus, bool *presence);
 
 /** Write one byte (LSB first). @thread_safe: no @isr_safe: no */
@@ -77,7 +83,9 @@ onewire_err_t onewire_select(onewire_t *bus, const uint8_t rom[8]);
 /** Issue SKIP_ROM (address all devices). @thread_safe: no @isr_safe: no */
 onewire_err_t onewire_skip(onewire_t *bus);
 
-/** Issue READ_ROM (single device on bus). @thread_safe: no @isr_safe: no */
+/** Issue READ_ROM (single device on bus). Returns ONEWIRE_ERR_CRC for a bad
+ *  CRC and ONEWIRE_ERR_BUS for an all-zero ROM: its CRC is valid, but only a
+ *  line held low produces it. @thread_safe: no @isr_safe: no */
 onewire_err_t onewire_read_rom(onewire_t *bus, uint8_t rom[8]);
 
 /** Compute Dallas/Maxim CRC-8 (polynomial 0x8C reflected). Pure function. */
