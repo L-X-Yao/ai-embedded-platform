@@ -17,8 +17,6 @@
 #define IPAD 0x36
 #define OPAD 0x5c
 
-typedef char assert_sha256_t_fits[(sizeof(sha256_t) <= 104) ? 1 : -1];
-
 static void prepare_key(const uint8_t *key, size_t key_len,
                         uint8_t block[HMAC_SHA256_BLOCK_SIZE])
 {
@@ -47,9 +45,8 @@ hmac_sha256_err_t hmac_sha256_init(hmac_sha256_t *ctx,
         ctx->o_key_pad[i]  = k_block[i] ^ OPAD;
     }
 
-    sha256_t *inner = (sha256_t *)ctx->i_ctx_buf;
-    sha256_init(inner);
-    sha256_update(inner, i_key_pad, HMAC_SHA256_BLOCK_SIZE);
+    sha256_init(&ctx->inner);
+    sha256_update(&ctx->inner, i_key_pad, HMAC_SHA256_BLOCK_SIZE);
 
     /* Wipe key material from stack (volatile to prevent optimization). */
     {
@@ -71,8 +68,7 @@ hmac_sha256_err_t hmac_sha256_update(hmac_sha256_t *ctx,
     REQUIRE(data != NULL || len == 0);
     if (!data && len > 0) { return HMAC_SHA256_ERR_PARAM; }
 
-    sha256_t *inner = (sha256_t *)ctx->i_ctx_buf;
-    sha256_update(inner, data, len);
+    sha256_update(&ctx->inner, data, len);
     return HMAC_SHA256_OK;
 }
 
@@ -83,8 +79,7 @@ hmac_sha256_err_t hmac_sha256_final(hmac_sha256_t *ctx, uint8_t mac[32])
     if (!ctx || !mac) { return HMAC_SHA256_ERR_PARAM; }
 
     uint8_t inner_hash[SHA256_DIGEST_SIZE];
-    sha256_t *inner = (sha256_t *)ctx->i_ctx_buf;
-    sha256_final(inner, inner_hash);
+    sha256_final(&ctx->inner, inner_hash);
 
     sha256_t outer;
     sha256_init(&outer);

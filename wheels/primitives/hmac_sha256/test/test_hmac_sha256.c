@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <stddef.h>
 #include <string.h>
 #include "hmac_sha256.h"
+#include "sha256.h"
 
 static void hex_to_bytes(const char *hex, uint8_t *out, size_t out_len)
 {
@@ -274,6 +276,47 @@ TEST(test_verify_null_args)
     ASSERT_TRUE(!hmac_sha256_verify(NULL, NULL));
 }
 
+/* ---------- Where a context can live ---------- */
+
+/* A byte before a member pushes it to a multiple of its type's alignment,
+ * so the member's offset here is that alignment. */
+typedef struct {
+    uint8_t       tag;
+    hmac_sha256_t ctx;
+} hmac_after_byte_t;
+
+typedef struct {
+    uint8_t  tag;
+    sha256_t ctx;
+} sha256_after_byte_t;
+
+TEST(test_context_aligns_like_the_sha256_it_holds)
+{
+    ASSERT_EQ(offsetof(sha256_after_byte_t, ctx),
+              offsetof(hmac_after_byte_t, ctx));
+}
+
+/* RFC 4231 case 2 from a context inside a caller's struct. A context with
+ * alignment 1 lands at offset 1 here: UBSan reports it, a Cortex-M faults. */
+TEST(test_context_after_a_byte_gives_the_rfc4231_mac)
+{
+    static hmac_after_byte_t rec;
+    const char *data = "what do ya want for nothing?";
+    uint8_t mac[32];
+    uint8_t expected[32];
+
+    hex_to_bytes("5bdcc146bf60754e6a042426089575c7"
+                 "5a003f089d2739839dec58b964ec3843",
+                 expected, 32);
+
+    ASSERT_EQ(HMAC_SHA256_OK,
+              hmac_sha256_init(&rec.ctx, (const uint8_t *)"Jefe", 4));
+    ASSERT_EQ(HMAC_SHA256_OK,
+              hmac_sha256_update(&rec.ctx, (const uint8_t *)data, 28));
+    ASSERT_EQ(HMAC_SHA256_OK, hmac_sha256_final(&rec.ctx, mac));
+    ASSERT_MEMEQ_N(expected, mac, 32);
+}
+
 TEST_MAIN("hmac_sha256")
     RUN(test_rfc4231_case1);
     RUN(test_rfc4231_case2);
@@ -295,4 +338,6 @@ TEST_MAIN("hmac_sha256")
     RUN(test_compute_null_key_nonzero_len_zeroes_mac);
     RUN(test_compute_null_data_nonzero_len_zeroes_mac);
     RUN(test_verify_null_args);
+    RUN(test_context_aligns_like_the_sha256_it_holds);
+    RUN(test_context_after_a_byte_gives_the_rfc4231_mac);
 TEST_MAIN_END()

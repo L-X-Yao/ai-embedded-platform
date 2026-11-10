@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "sha256.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,7 @@ typedef enum {
 
 typedef struct {
     uint8_t o_key_pad[HMAC_SHA256_BLOCK_SIZE]; /* internal: outer padded key */
-    uint8_t i_ctx_buf[104];                    /* internal: inner sha256_t (opaque storage) */
+    sha256_t inner;                            /* internal: inner hash; sets the alignment */
 } hmac_sha256_t;
 
 /**
