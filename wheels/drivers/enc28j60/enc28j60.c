@@ -429,6 +429,24 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
     return ENC28J60_ERR_TIMEOUT;
 }
 
+/* Give a read packet's room back and move on to the next one */
+static void free_packet(enc28j60_t *dev, uint16_t next_pkt)
+{
+    dev->next_packet_ptr = next_pkt;
+
+    /* Free RX buffer space (errata: ERXRDPT must be odd) */
+    if (next_pkt == RXSTART) {
+        write_reg(dev, 0, ERXRDPTL, (uint8_t)(RXEND & 0xFFU));
+        write_reg(dev, 0, ERXRDPTH, (uint8_t)(RXEND >> 8));
+    } else {
+        write_reg(dev, 0, ERXRDPTL, (uint8_t)((next_pkt - 1U) & 0xFFU));
+        write_reg(dev, 0, ERXRDPTH, (uint8_t)((next_pkt - 1U) >> 8));
+    }
+
+    /* Decrement packet counter */
+    bit_field_set(dev, ECON2, ECON2_PKTDEC);
+}
+
 enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
                                  uint16_t buf_size, uint16_t *frame_len)
 {
@@ -452,43 +470,27 @@ enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
     uint16_t rx_len   = (uint16_t)((uint16_t)hdr[3] << 8 | hdr[2]);
     /* hdr[4..5] = status bits (ignored here) */
 
-    /* Sanity: rx_len includes CRC (4 bytes). Frame length = rx_len - 4.
-     * However, the reported len from the status vector is the byte count
-     * as received.  We pass it through as-is (CRC included in count). */
-    if (rx_len > buf_size) {
+    /* p.46 Table 7-3: the count includes the CRC, which is the chip's and not
+     * the caller's. It comes from the buffer, so it is not trusted to hold one. */
+    if (rx_len < CRC_LEN) {
+        free_packet(dev, next_pkt);
+        *frame_len = 0;
+        return ENC28J60_ERR_SIZE;
+    }
+    uint16_t len = (uint16_t)(rx_len - CRC_LEN);
+
+    if (len > buf_size) {
         /* Still need to free the packet even if buffer too small */
-        dev->next_packet_ptr = next_pkt;
-        /* Free RX space */
-        if (next_pkt == RXSTART) {
-            write_reg(dev, 0, ERXRDPTL, (uint8_t)(RXEND & 0xFFU));
-            write_reg(dev, 0, ERXRDPTH, (uint8_t)(RXEND >> 8));
-        } else {
-            write_reg(dev, 0, ERXRDPTL, (uint8_t)((next_pkt - 1U) & 0xFFU));
-            write_reg(dev, 0, ERXRDPTH, (uint8_t)((next_pkt - 1U) >> 8));
-        }
-        bit_field_set(dev, ECON2, ECON2_PKTDEC);
-        *frame_len = rx_len;
+        free_packet(dev, next_pkt);
+        *frame_len = len;
         return ENC28J60_ERR_SIZE;
     }
 
-    /* Read frame data */
-    read_buffer(dev, frame, rx_len);
-    *frame_len = rx_len;
+    /* Read frame data. The next receive sets ERDPT, so the CRC needs no reading. */
+    read_buffer(dev, frame, len);
+    *frame_len = len;
 
-    /* Advance next packet pointer */
-    dev->next_packet_ptr = next_pkt;
-
-    /* Free RX buffer space (errata: ERXRDPT must be odd) */
-    if (next_pkt == RXSTART) {
-        write_reg(dev, 0, ERXRDPTL, (uint8_t)(RXEND & 0xFFU));
-        write_reg(dev, 0, ERXRDPTH, (uint8_t)(RXEND >> 8));
-    } else {
-        write_reg(dev, 0, ERXRDPTL, (uint8_t)((next_pkt - 1U) & 0xFFU));
-        write_reg(dev, 0, ERXRDPTH, (uint8_t)((next_pkt - 1U) >> 8));
-    }
-
-    /* Decrement packet counter */
-    bit_field_set(dev, ECON2, ECON2_PKTDEC);
+    free_packet(dev, next_pkt);
 
     return ENC28J60_OK;
 }

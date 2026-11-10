@@ -778,6 +778,9 @@ static void enc28j60_model_init(enc28j60_model_t *m)
  * Format: [next_pkt_lo, next_pkt_hi, len_lo, len_hi, status_lo, status_hi]
  * ================================================================ */
 
+#define ENC_RX_CRC_LEN  4U
+#define ENC_RX_CRC_MARK 0xC5U
+
 /* The receive hardware stores bytes round the buffer as the read pointer
  * reads them back */
 __attribute__((unused))
@@ -796,17 +799,21 @@ static void enc28j60_model_inject_rx(enc28j60_model_t *m, uint16_t addr,
     /* Next packet pointer (little-endian) */
     enc_rx_put(m, &off, (uint8_t)(next_pkt & 0xFFU));
     enc_rx_put(m, &off, (uint8_t)(next_pkt >> 8));
-    /* Byte count (little-endian). Table 7-3 counts the 4 CRC bytes too, and
-     * they follow the data. They are left out here because enc28j60_receive
-     * passes them on to the caller, and whether it should is still open. */
-    enc_rx_put(m, &off, (uint8_t)(frame_len & 0xFFU));
-    enc_rx_put(m, &off, (uint8_t)(frame_len >> 8));
+    /* Byte count (little-endian): p.46 Table 7-3 counts the 4 CRC bytes too */
+    uint16_t byte_count = (uint16_t)(frame_len + ENC_RX_CRC_LEN);
+    enc_rx_put(m, &off, (uint8_t)(byte_count & 0xFFU));
+    enc_rx_put(m, &off, (uint8_t)(byte_count >> 8));
     /* Status: Table 7-3 bit 23, Received Ok, is bit 7 of this first byte */
     enc_rx_put(m, &off, 0x80U);
     enc_rx_put(m, &off, 0x00U);
     /* Frame data */
     for (uint16_t i = 0; i < frame_len; i++) {
         enc_rx_put(m, &off, frame[i]);
+    }
+    /* The CRC follows the data. Nothing checks these bytes, so a marker will
+     * do: a test can see that they stay out of the caller's frame. */
+    for (uint16_t i = 0; i < ENC_RX_CRC_LEN; i++) {
+        enc_rx_put(m, &off, ENC_RX_CRC_MARK);
     }
 }
 

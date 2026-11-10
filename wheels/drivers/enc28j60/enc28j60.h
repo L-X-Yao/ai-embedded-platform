@@ -75,7 +75,11 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
                               uint16_t len);
 
 /**
- * Receive one Ethernet frame from RX buffer.
+ * Receive one Ethernet frame from RX buffer. *frame_len is the frame without the
+ * 4-byte CRC, which stays out of frame, so a buf_size of 1514 always does. Returns
+ * ENC28J60_ERR_SIZE, with the frame dropped, if it does not fit in buf_size, and
+ * *frame_len then says how long it was, or 0 if the chip's count was too short to
+ * be a frame.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,

@@ -377,12 +377,12 @@ TEST(test_receive_packet)
     uint8_t test_frame[] = {0xDE, 0xAD, 0xBE, 0xEF};
     mock_rx_buf[0] = 0x00; /* next packet pointer low (back to start) */
     mock_rx_buf[1] = 0x00; /* next packet pointer high */
-    mock_rx_buf[2] = 0x04; /* byte count low */
+    mock_rx_buf[2] = 0x08; /* byte count low: 4 data, 4 CRC */
     mock_rx_buf[3] = 0x00; /* byte count high */
     mock_rx_buf[4] = RSV_RECEIVED_OK; /* status low */
     mock_rx_buf[5] = 0x00; /* status high */
     memcpy(&mock_rx_buf[6], test_frame, 4);
-    mock_rx_buf_len = 10;
+    mock_rx_buf_len = 14;
     mock_rx_buf_idx = 0;
 
     /* Set packet count = 1 */
@@ -557,12 +557,12 @@ TEST(test_receive_buf_too_small_wrap)
 
     mock_regs[1][EPKTCNT] = 1;
 
-    uint8_t out[10]; /* smaller than rx_len (40) */
+    uint8_t out[10]; /* smaller than the frame: rx_len 40 less the CRC */
     uint16_t out_len = 0;
     enc28j60_err_t e = enc28j60_receive(&dev, out, sizeof(out), &out_len);
     ASSERT_EQ(e, ENC28J60_ERR_SIZE);
     /* frame_len should still be reported even on error */
-    ASSERT_EQ(out_len, 40);
+    ASSERT_EQ(out_len, 36);
     /* next_packet_ptr must be advanced (to RXSTART = 0x0000) */
     ASSERT_EQ(dev.next_packet_ptr, 0x0000);
 }
@@ -591,7 +591,7 @@ TEST(test_receive_buf_too_small_no_wrap)
     uint16_t out_len = 0;
     enc28j60_err_t e = enc28j60_receive(&dev, out, sizeof(out), &out_len);
     ASSERT_EQ(e, ENC28J60_ERR_SIZE);
-    ASSERT_EQ(out_len, 40);
+    ASSERT_EQ(out_len, 36);
     ASSERT_EQ(dev.next_packet_ptr, 0x0020);
 }
 
@@ -609,12 +609,12 @@ TEST(test_receive_next_pkt_nonzero)
     /* next_pkt = 0x0010 (non-zero, non-RXSTART) */
     mock_rx_buf[0] = 0x10; /* next_pkt lo */
     mock_rx_buf[1] = 0x00; /* next_pkt hi */
-    mock_rx_buf[2] = 0x04; /* rx_len lo */
+    mock_rx_buf[2] = 0x08; /* rx_len lo: 4 data, 4 CRC */
     mock_rx_buf[3] = 0x00; /* rx_len hi */
     mock_rx_buf[4] = RSV_RECEIVED_OK;
     mock_rx_buf[5] = 0x00;
     memcpy(&mock_rx_buf[6], test_frame, 4);
-    mock_rx_buf_len = 10;
+    mock_rx_buf_len = 14;
     mock_rx_buf_idx = 0;
 
     mock_regs[1][EPKTCNT] = 1;

@@ -873,8 +873,8 @@ TEST(test_receive_counts_packets_down_with_pktdec)
     uint8_t out[16];
     uint16_t out_len = 0;
 
-    enc28j60_model_inject_rx(&model, 0x0000, 0x000A, a, 4);
-    enc28j60_model_inject_rx(&model, 0x000A, 0x0014, b, 4);
+    enc28j60_model_inject_rx(&model, 0x0000, 0x000E, a, 4);
+    enc28j60_model_inject_rx(&model, 0x000E, 0x001C, b, 4);
     enc28j60_model_set_pktcnt(&model, 2);
 
     ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
@@ -900,12 +900,87 @@ TEST(test_receive_too_small_still_counts_the_packet_down)
     uint8_t out[4];
     uint16_t out_len = 0;
 
-    enc28j60_model_inject_rx(&model, 0x0000, 0x000E, a, 8);
+    enc28j60_model_inject_rx(&model, 0x0000, 0x0012, a, 8);
     enc28j60_model_set_pktcnt(&model, 1);
 
     ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len),
               ENC28J60_ERR_SIZE);
+    ASSERT_EQ(out_len, 8);
     ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+}
+
+/* p.46 Table 7-3: the Received Byte Count "includes the destination address,
+ * source address, type/length, data, padding and CRC fields". The CRC is not
+ * the caller's: a stack would take it for padding or trailing data. */
+TEST(test_receive_leaves_the_crc_out)
+{
+    setup_and_init();
+    uint8_t frame[60];
+    uint8_t out[64];
+    uint16_t out_len = 0;
+    for (uint8_t i = 0; i < 60U; i++) frame[i] = (uint8_t)(i + 1U);
+    memset(out, 0xEE, sizeof(out));
+
+    enc28j60_model_inject_rx(&model, 0x0000, 0x0046, frame, 60);
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out_len, 60);
+    ASSERT_MEMEQ_N(out, frame, 60);
+    ASSERT_EQ(out[60], 0xEE);
+    ASSERT_EQ(dev.next_packet_ptr, 0x0046);
+}
+
+/* So the caller needs room for the frame and no more. */
+TEST(test_receive_fits_a_buffer_of_the_frame_size)
+{
+    setup_and_init();
+    uint8_t frame[60] = {0};
+    uint8_t out[60];
+    uint16_t out_len = 0;
+
+    enc28j60_model_inject_rx(&model, 0x0000, 0x0046, frame, 60);
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out_len, 60);
+}
+
+/* The longest frame on the wire is 1518 with its CRC, the limit init programs
+ * into MAMXFL, so the same 1514 bytes as for enc28j60_send always do. */
+TEST(test_receive_longest_frame_fits_1514_bytes)
+{
+    setup_and_init();
+    static uint8_t frame[1514];
+    static uint8_t out[1514];
+    uint16_t out_len = 0;
+    for (uint16_t i = 0; i < 1514U; i++) frame[i] = (uint8_t)i;
+
+    enc28j60_model_inject_rx(&model, 0x0000, 0x05F4, frame, 1514);
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out_len, 1514);
+    ASSERT_MEMEQ_N(out, frame, 1514);
+}
+
+/* The count of a healthy packet is never below the CRC, but it comes from the
+ * buffer, and a subtraction must not turn it into 65 000 bytes to read. */
+TEST(test_receive_count_below_the_crc_is_dropped)
+{
+    setup_and_init();
+    uint8_t out[16];
+    uint16_t out_len = 99;
+    uint16_t off = 0;
+    static const uint8_t header[6] = { 0x10, 0x00, 0x03, 0x00, 0x80, 0x00 };
+    for (uint8_t i = 0; i < 6U; i++) enc_rx_put(&model, &off, header[i]);
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len),
+              ENC28J60_ERR_SIZE);
+    ASSERT_EQ(out_len, 0);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+    ASSERT_EQ(dev.next_packet_ptr, 0x0010);
 }
 
 /* Register 3-2 note 1: PKTDEC "is automatically cleared once it is set", and
@@ -943,7 +1018,7 @@ TEST(test_receive_packet_spanning_the_end_of_the_buffer)
     for (uint8_t i = 0; i < 32U; i++) frame[i] = (uint8_t)(0x40U + i);
 
     const uint16_t at = ENC_RXEND - 9U;
-    enc28j60_model_inject_rx(&model, at, 0x001C, frame, 32);
+    enc28j60_model_inject_rx(&model, at, 0x0020, frame, 32);
     ASSERT_EQ(model.buffer[ENC_RXEND], frame[3]);
     ASSERT_EQ(model.buffer[ENC_RXSTART], frame[4]);
     ASSERT_EQ(model.buffer[ENC_TXSTART], 0x00);    /* TX space untouched */
@@ -953,7 +1028,7 @@ TEST(test_receive_packet_spanning_the_end_of_the_buffer)
     ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
     ASSERT_EQ(out_len, 32);
     ASSERT_MEMEQ_N(out, frame, 32);
-    ASSERT_EQ(dev.next_packet_ptr, 0x001C);
+    ASSERT_EQ(dev.next_packet_ptr, 0x0020);
 }
 
 /* p.30: "if the last byte in the receive buffer is read (ERDPT = ERXND), the
@@ -1039,7 +1114,7 @@ TEST(test_model_injected_packet_is_received_ok)
     setup_and_init();
     const uint8_t a[4] = {1, 2, 3, 4};
 
-    enc28j60_model_inject_rx(&model, 0x0100, 0x010A, a, 4);
+    enc28j60_model_inject_rx(&model, 0x0100, 0x010E, a, 4);
 
     ASSERT_EQ(model.buffer[0x0104] & 0x80U, 0x80);
 }
@@ -1123,6 +1198,10 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_model_src_leaves_ecocon);
     RUN(test_receive_counts_packets_down_with_pktdec);
     RUN(test_receive_too_small_still_counts_the_packet_down);
+    RUN(test_receive_leaves_the_crc_out);
+    RUN(test_receive_fits_a_buffer_of_the_frame_size);
+    RUN(test_receive_longest_frame_fits_1514_bytes);
+    RUN(test_receive_count_below_the_crc_is_dropped);
     RUN(test_model_pktdec_clears_itself_and_stops_at_zero);
     RUN(test_receive_packet_spanning_the_end_of_the_buffer);
     RUN(test_model_rbm_wraps_at_erxnd);
