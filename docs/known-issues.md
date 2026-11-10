@@ -4,6 +4,105 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## State at the close of the November round (2026-11-10)
+
+Work on new features stopped on this date, and only fixes are planned. This section lists what is known to be open. Read it before relying on a component.
+
+**Nothing changed since 2026-04-27 has run on hardware.** Every fix in this file dated November matches a manual, a test or a proof on the host, and nothing more. That includes the later changes to the five components of the April soak (`crc16`, `w25qxx`, `qmi8658a`, `xgzp6816d`, `qmc5883p`) and to `air780eg`, which now ends commands with CR where the board was tested with CR LF. The GD32F4xx HAL port under `vsf-addon/` compiles and has host models, but no firmware calls it: the April soak ran the flybox firmware through its own compatibility layer.
+
+Drivers that cannot do their job as they are, with no further work planned:
+
+- `bmi270` has no 8 KB config upload, `vl53l1x` lacks the configuration ST's driver loads, and `vl53l0x` has no device initialisation or calibration.
+- `w5500` has no API to connect, listen or set a peer. `apds9960_read_gesture` needs its direction logic rewritten. `gc9a01` needs a per-panel init table. `rc522_halt` cannot halt a card, because the driver never selects one. `tcs34725_get_lux` needs gain and integration time passed in.
+- Limited: `bmm150` has no trim compensation and `bq27441` cannot set the design capacity. The READMEs of `sx1262`, `cc1101`, `bme680`, `bma400` and `bno055` list what they lack.
+- The suspect items of the datasheet check are still open, under Still open in each driver README. So are the test model faults that no driver fix needed.
+
+Open by decision, or because nothing here can test it:
+
+- `flash_ring` keeps one header copy, so a power cut between the header's erase and its program resets the ring to empty with the frames still in flash (W1A-9). A second copy needs a spare sector and a config field. `flash_ring_peek` takes an absolute slot, so a caller reads `read_idx` from the struct to find the oldest frame (W1A-10).
+- The Nations headers under `vsf/` and the local changes to the FlashDB copy in `kvs` stay as they are (Q2-1, Q2-2, the owner's decision).
+- All 259 wheels carry the candidate label, although the contract asks for a board run for drivers and modules and a recorded API approval (D1-5). The READMEs carry stock review text and `@user` as the responsible human, and the audit accepts both (T1-29).
+- `make verify` finishes 11 of its 15 CBMC proofs: `cobs`, `soft_timer`, `bitmap` and `fixed_point` hit the 300 s limit. Frama-C is not installed, so the `ring_buffer` ACSL contracts were not proved again after its rewrite.
+- `xmodem` without a timer can still take a stray 0x04 for EOT. `ota_ab` keeps a power-cut window unless `params_addr2` is set, and `boot_counter` has one record copy. `sntp_client` refuses every reply when the caller passes no transmit time. `mqtt_client` does not report a refused or timed-out subscription.
+- Seven wheels keep the caller's name pointer against api-conventions 3.3: `power_manager`, `scheduler`, `cli_shell`, `param_table`, `config_store`, `at_command` and `mqtt_client` (Q-8). `telemetry`, `sensor_hub` and `task_watchdog` now state the lifetime rule in their headers.
+- Adding a timer to `timer_wheel` beside a tick in an interrupt needs the interrupt masked. `ring_buffer`, `fifo_queue`, `double_buffer`, `soft_timer` and `timer_wheel` stop the build on compilers other than GCC and Clang until their barrier macro is defined.
+- `nmea_parser` takes position from GGA but not time (W3B-22). `signal_stats` stops counting at 2^32-1 feeds. `stepper` can make the first delay up to 16.7% short. `kvs` needs about twice its usual stack the first time garbage collection runs, which only the README says (Q18-2).
+- HAL port: a read without STOP keeps clocking, a data NACK is reported as an address NACK, reads longer than 2 bytes need the interrupt served within a byte time, and the STOP clear can race a register update.
+- The private flybox firmware cannot build the current wheels: its build passes no `tooling/harness` include path, does not list `nmea_parser`, and its `fr_shim.h` defines the `flash_ring` include guard before the header (D1-2). `projects/` is frozen, so this is recorded and not fixed. Its barometer adapter fault from the section on second sources is open too.
+
+The 223 minor items of the tenth super audit are recorded and not fixed, except where a larger fix covered them.
+
+## Super audit, second run (2026-11-07)
+
+The tenth super audit reported 36 critical, 250 moderate and 223 minor items in 20 slices. The first 57 fixes are in "Super audit, first fixes" below. This run handled the other critical and moderate items, each fix with a failing test or a forced failure first. The exceptions are in the section above. Two items were wrong as written: `signal_stats` could no longer divide by zero after an earlier fix (W1C-17), and `gpio_led_on` on a zeroed LED reported ON, it did not crash (W2-11). None of this has run on hardware.
+
+What changed for callers, by layer. Each README has the detail.
+
+Primitives:
+
+- `flash_ring`: init refuses single-sector rings and erases the first data sector on fresh flash. Push erases one sector ahead and drops the oldest frames a sector at a time when full, so the ring holds at most `total_slots - 1` frames. Init walks forward from the stored `write_idx` to the real one, and frames popped since the last header write come back after a reset. Push and pop return OK when only the header write failed. `peek` refuses a length above `slot_size` and a slot outside the live range, and returns EMPTY on an empty ring.
+- `fal`: partition calls return `FAL_ERR_NOT_READY` until `fal_init` succeeds, and `fal_init` can return `FAL_ERR_HAL` or the new `FAL_ERR_PART_TABLE`. A range that wraps returns `FAL_ERR_OVERFLOW`.
+- `gnss_filter`: `gnss_datetime_to_unix` returns -1 for a month outside 1 to 12. Init refuses non-finite floats, a `max_hdop` not above 0, a `max_vdop` below 0 and an alpha outside 0 to 1. A non-finite position or a NaN hdop closes the gate. The longitude filter wraps at 180 degrees.
+- `cli_parser`, `cli_shell`: an over-long line prints `line too long` and does not run. `cli_parser` skips table entries with a NULL name or handler. Feed and run are not ISR safe.
+- `base64_decoded_size` grows when the length is not a multiple of 4. `fp_to_int_rounded` saturates at 32767, and `fp_to_string(FP_MIN)` prints -32768. `framebuffer` clips sizes past 65535. `bitfield` writers need the caller's lock.
+- `soft_i2c`: an address above 0x7F returns `ERR_PARAM`, SDA low before a START returns `ERR_BUS`, and `soft_i2c_bus_recover` returns `ERR_BUS` if SDA stays low.
+- `soft_timer`: a callback runs after its timer is settled, so a one-shot can re-arm itself, and a restarted one-shot waits a full period.
+- `str_to_float` returns `ERR_RANGE` past FLT_MAX. `varint` returns OVERFLOW for a tenth byte above bit 0. `timer_wheel_tick` does nothing with zero slots.
+- `kvs`: init and clean repair a sector with a bad header, and the three iterators return at once after a failed init. A full TSDB keeps its logs and returns `FDB_SAVED_FULL` until cleaned. Two more marked fixes went into the FlashDB copy: the reverse time iterator lost older sectors when one filled exactly, and `fdb_tsdb_init` with every sector full lost all logs on the next boot. `VENDOR.md` lists every local change. The tests now call every public function.
+- `log_dedup`: lines that differ only in level no longer collapse. `log_flash`: after a failed erase, lines that need the next sector are dropped until an erase succeeds. `log` can format with `printf_tiny`, which is off by default.
+- `lookup_table`, `mag_cal`, `pid_controller`: NaN or infinite input is refused. `pid_controller` returns 0.0f for it, or the nearest limit if 0 is out of range. `mahony_ahrs` ignores non-finite input, and a reset clears the integrators.
+- `moving_rms` keeps a second running sum, 4 bytes more. `printf_tiny` caps a width at 4095 and stops at the first unknown specifier, and its format attribute can raise `-Wformat` errors. `sha256_update` returns `SHA256_ERR_PARAM` for NULL data with a length.
+
+Protocols:
+
+- `ota_ab_init` refuses a `max_boot_count` of 255. `ppp_frame_decode` accepts any payload up to `payload_cap`, and source and payload buffer must not overlap. `pb_decode_field` returns `PB_ERR_MALFORMED` for field 0 and fields above 255.
+- `s_record_encode` returns OVERFLOW for an address too wide for the record type, and decode refuses anything but CR or LF after the checksum. `tftp_parse` returns OVERFLOW for DATA above 512 bytes. `ymodem` has `YMODEM_ERR_OVERFLOW` for names of 64 bytes or more, and sizes past 32 bits saturate.
+- `sntp_client` gives real times for 2036 to 2104, by the era rule of RFC 4330.
+- `http_request` refuses a space in the path and CR or LF in any field. `intel_hex` refuses misshaped records. `mqtt_packet_parse_publish` refuses a cut packet. The `mqtt5_packet` parsers accept properties they do not store and refuse IDs not valid for the packet.
+- `json_rpc` reads only top-level keys, treats batch arrays as invalid, and escapes method and message text. `ibus_decode` keeps 12 channel bits. After `ISOTP_ERR_SEQUENCE` the message is lost.
+- `nmea_parser` ignores out-of-range values and returns OK. It reads decimals without `strtof`, so `1e2`, `0x10`, `12abc` and a bare `.` count as out of range.
+- `onewire_search`: CRC and bus errors hold the search, both bits reading 1 gives `ERR_BUS`, and family code 0 is refused. The `ncp5623_parser` docs now name its protocol, ToshibaLED.
+
+Modules:
+
+- `data_logger`: `add_string` refuses comma, double quote, CR and LF. Commit refuses a short record and leaves it open.
+- `event_bus`, `scheduler`: a subscriber or task removed during a pass is not called by it. `EVENT_BUS_MAX_DEFERRED` is gone.
+- `flash_journal`: init returns `ERR_STORAGE` on any failed read, and appends then fail with `ERR_FULL` until an init succeeds. A write that fails after programming gives up the sector.
+- `mqtt_client`: QoS 0 publishers now send PINGREQ. `next_id`, and the activity and release calls of `power_manager`, are no longer labelled ISR safe. `power_manager_register` refuses timeouts above 0x7FFFFFFF ms.
+- `sensor_hub` counts infinity as a read error. Registering a known name with `task_watchdog` restarts it. `telemetry` formats floats without printf.
+- A limit above 255 no longer compiles in the wheels that count in `uint8_t`.
+
+Drivers:
+
+- Every driver's init clears the device struct first. After a refused init, later calls return the parameter error, and a working struct passed to a refused init is wiped. Recovery needs another init.
+- More drivers refuse a NULL callback they need: `adxl345`, `apds9960`, `bme280`, `bmp280`, `bno055`, `ccs811`, `ds3231`, `ft6x36`, `hd44780`, `lis3dh`, `lps22hb`, `mcp4725`, `mpu6050`, `ms5611`, `sgp40`, `tmp102` and `vl53l0x`.
+- Refused now: `max31855` with D16 alone, `rc522` 7 and 10 byte UIDs, `sd_spi` byte-addressed blocks above 0x7FFFFF, impossible dates in `pcf8563`, `osrs_t` 0 in `bme688`, and `KEYPAD_MAX_COLS` above 16.
+- `bme680`, `bme688`: pressure is right outside -47 to 97 C. `servo_get_angle` follows `set_pulse`. A failed `veml7700` setter keeps the old scale. `bno055` refuses `read_euler` after a failed mode change. `hcsr04` can block 25 ms longer. `pca9685` wakes and restarts its outputs after a failed prescale write. `hx711` reads after an init timeout return `ERR_PARAM`.
+
+Tooling:
+
+- `make frama-c`, `fuzz`, `test-mutate`, `batch_fix`, `wheel_promote`, `stack_analyzer` and `--merge-all` exit non-zero where they used to report success. `audit_wheels` fails on C99 or `-Werror` drift, `check_readme_examples` fails on stale wheel APIs, and `make test-property` includes `kvs`. Mutation rates from before this date do not compare with later ones.
+- The generated `test_null_*` files assert rejection: 258 wheels, 1626 asserted calls, 36 allowed as optional. No wheel failed to reject NULL.
+- Hooks are mode 100755, and `make bootstrap` warns when `core.hooksPath` is not `.githooks`.
+- A sweep with `-fshort-enums`, the ARM default, passed on 258 wheels. `heatshrink` failed and is fixed.
+
+## API changes approved for the audit (2026-11-07)
+
+These items could not be fixed behind the old API. Each README has a migration note. None of this has run on hardware.
+
+- Memory and concurrency: `hmac_sha256_t` holds a `sha256_t`, so it is aligned for Cortex-M. `ring_buffer` and `fifo_queue` dropped their count field: one writer and one reader may run in different contexts, and reset and clear belong to the reader's side. `double_buffer` and `soft_timer` are ISR safe behind a barrier.
+- Transfer and storage: `xmodem` refuses EOT after a bad frame until a block passes, and can use line idle in timer mode. In `ymodem` one CAN no longer cancels, two EOTs back to back are handled, and a short file gives `YMODEM_ERR_SHORT`. `ota_ab` renamed `reserved` to `seq`, refuses overlapping regions and can keep a second parameter copy at `params_addr2`. The `boot_counter` record grew from 8 to 20 bytes, an invalid record loads as 0, a failed load blocks saves, and a KV backend must return `BOOT_COUNTER_READ_NO_RECORD`.
+- Protocols: `http_parser` ends 1xx, 204 and 304 at the blank line, and has `parse_response_to_head` and `ERR_TRANSFER_ENCODING`. `at_command` has `expect_final`. `mavlink` returns `PARSE_UNKNOWN_MSG` for an unknown id and has `set_crc_table`. `crsf` limits a payload to 60 bytes and returns `ERR_FORMAT` for a length outside 2 to 62. `mqtt_client` poll returns `ERR_TIMEOUT` once for a publish with no PUBACK. `sntp_client` refuses LI 3, a stratum above 15, a zero transmit time and versions other than 3 and 4, and a reply whose originate time is not the request's. `dns_packet` type and class are `uint16_t`. The `heatshrink` error codes are -1. `crc_any_finalize` exists now. `slip` drops a broken frame up to the next END and returns `ERR_DROPPED`.
+- Primitives and drivers: `ewma` output reaches its input, and the struct grew from 8 to 16 bytes. `gnss_filter` holds position in double, 60 to 80 bytes. `kalman_1d` reset keeps q and r. `onewire` returns `ERR_PRESENCE` on an empty bus and has `ERR_BUS`. A timer added to `timer_wheel` in a callback waits its full delay. `state_machine` returns `ERR_BUSY` for a nested process or reset. `gpio_button` reports RELEASE on every edge and DOUBLE_CLICK one tick later. `lora_sx1276`, `sx1262` and `cc1101` return a new `*_ERR_SIZE` for a packet longer than the buffer and copy nothing.
+- `air780eg` follows its manual: a plain OK ends a command only when OK is awaited, FAIL lines give `CMD_ERROR`, commands end in CR, topics go to 256 bytes and messages to 4100. The struct grew from 1672 to 5872 bytes, and `AIR780EG_PAYLOAD_MAX` lowers it. New: `send_data`, `on_fail`, `on_mqtt_cached` and `get_msg_drop_count`.
+- Other drivers: `lis3mdl`, `ltr390`, `apds9960` and `tmp102` return `ERR_NOT_READY` before a sample exists. `ds3231_get_time` returns `ERR_TIME_INVALID` while OSF is set, and `set_time` clears it. `enc28j60_receive` no longer counts the CRC. `icm42688_soft_reset` sets the reset-range divisors. `mcp2515_abort_tx` exists now. `pac1952` takes its address from the config.
+
+## HAL port, docs and mirror audits (2026-11-07)
+
+- HAL port (`vsf-addon/hal/driver/gd/GD32F4XX/`): 3 critical and 16 moderate items handled. Its status is compile-only, as the section at the top says, and its README states that. Host models of the peripherals are in its `test/` directory and run through `run.sh`, not through `make check`. Flash write and erase now return an error where they returned OK, and take whole sectors only. I2C refuses zero-length, NULL, missing-handler and busy calls. SPI master needs a GPIO chip select. USART with 8 data bits and parity sends 8 data bits, and 9 with parity is refused.
+- Docs: 14 of 16 moderate items fixed. The quick start, the catalog example and the guide snippet compile and run again, and so does the `mps2_bare` scaffold. The two left are D1-2 and D1-5, in the section at the top.
+- Public mirror: no real credential in the tree or in its history. Customer detail was removed from test data and comments.
+
 ## Fixed by the stateful fuzz targets (2026-11-05)
 
 `mqtt_client`, `ota_manager`, `cli_shell` and `air780eg` got libFuzzer targets, which takes the total to 57. Each one runs the component through sequences the input picks and checks it against a model. Line coverage is 89 to 97 percent, and 22 injected bugs were all found. `cli_shell` had no findings.
@@ -53,14 +152,14 @@ A scan of open work then found that `make check` never ran `make test-property`,
 
 ## Super audit, first fixes (2026-11-06)
 
-The tenth super audit covered wheels, tooling, CI, portability, memory safety, numerics, tests and licences. It found about 35 critical and 210 moderate candidates. So far 57 are fixed, each proved by a failing test or a forced failure first, and none of those proved wrong. The rest are still open, and the docs, security and HAL port slice has to be redone.
+The tenth super audit covered wheels, tooling, CI, portability, memory safety, numerics, tests and licences. With the docs, security and HAL port slice, which was redone later, it reported 36 critical, 250 moderate and 223 minor items. These are the first 57 fixes, each proved by a failing test or a forced failure first, and none of those proved wrong. The rest were handled on 2026-11-07, see "Super audit, second run" above.
 
 - Checks that could not fail: `test_all.sh` ran one executable per wheel, so 100 of 944 test targets never ran in `make check`. It now runs all of them, and all pass. `--parallel` lost pytest results, `audit_compile.py` could not see warnings, `audit_coverage.py` measured the test file, `audit_deep.sh` skipped failed builds, and `build_flash_check.sh` and `hil_runner.py` could report a pass after a failed run.
 - Memory safety: `lorawan_build_data` wrapped its length check, `mqtt_client` overran its buffer when a callback reconnected, `soft_timer_start` accepted a destroyed slot, `memory_pool_init` took misaligned buffers, and `config_store` and `error_handler` trusted what they loaded from flash.
 - Wrong results: `fp_to_string` at 5 places, `crc_any` below 8 bits, `stepper` ramps, `hdlc` on shared flags, `json_parser` state, and `heatshrink` finish.
 - Storage: `flash_journal` lost appends after a torn write, and `flash_ring_init` accepted layouts that destroy live frames.
 
-Still open and serious: `flash_ring` reads a full ring as empty and overwrites cells after a reset, `framebuffer_line` can hang, and `gnss_datetime_to_unix` reads out of bounds. `hmac_sha256_t` can HardFault on Cortex-M, `ring_buffer` and `fifo_queue` lose data in their ISR use, and `xmodem` can accept a truncated file. The last three need an API change.
+Fixed on 2026-11-07, after this section was written: `flash_ring` read a full ring as empty and overwrote cells after a reset, `framebuffer_line` could hang, and `gnss_datetime_to_unix` read out of bounds. `hmac_sha256_t` could HardFault on Cortex-M, `ring_buffer` and `fifo_queue` lost data in their ISR use, and `xmodem` could accept a truncated file.
 
 ## High-severity suspects settled from second sources (2026-11-06)
 
@@ -82,15 +181,15 @@ Corrected models exposed about 30 more driver bugs, which were fixed:
 - Calls the chip ignores or rejects, reported as OK: `mcp4725` during an EEPROM write, `mcp2515_send` outside Normal mode, `nrf24_send` in RX mode, `scd40` commands during a measurement, `veml7700` setters with codes outside the table.
 - `bmp388` reset lost its oversampling, `pca9685_sleep` twice lost RESTART, `ccs811` init sent APP_START to a running chip, and `mcp3008` never raised CS at init.
 
-Left for a decision, because a fix changes what callers get:
+Left for a decision then, because a fix changes what callers get. All but the last were fixed on 2026-11-07, see "API changes approved for the audit" above:
 
 - `enc28j60_receive` counts the 4 CRC bytes in `*frame_len`.
 - `icm42688_soft_reset` leaves the scale divisors stale, so 1 g reads 0.5 g until init.
 - `lis3mdl`, `apds9960`, `tmp102` and `ltr390` return OK with zeros or old data before the first result. `ds3231` reads back a reset date as valid with OSF set.
 - `mcp2515` has no way to abort a frame that cannot go out, so mode changes time out.
-- `adxl345_init` now waits the turn-on time, which is about 10 s at 0.10 Hz.
+- `adxl345_init` now waits the turn-on time, which is about 10 s at 0.10 Hz. This stays.
 
-The held-back drivers kept their code, so their models stop short of what the manuals say: `air780eg` tests still feed strings that exist only in the driver, and the `qmi8658a` model hands out data at once.
+The held-back drivers kept their code, so their models stop short of what the manuals say: the `qmi8658a` model hands out data at once. `air780eg` was held back too, until its fix on 2026-11-07.
 
 ## Datasheet check of the last 22 drivers (2026-11-06)
 
@@ -99,7 +198,7 @@ This batch covers the 21 drivers reviewed only in May and `icm42688`, whose manu
 - Fixed in 17 drivers. The worst: 218 of the 256 entries in the `ds18b20` CRC table were wrong, so real reads almost always failed. `pca9685_init` left the oscillator off, so no channel could work. `hx711_tare` failed on its second sample. A skipped channel on `bme280` and `bmp280` came back as a real reading. `max30102` read a full FIFO as empty, and `bh1750` one-time modes returned the same value forever.
 - `enc28j60` needed nine fixes. `send` reported success on aborted frames, and half duplex was not set up as the manual and errata DS80349C require.
 - Not usable as claimed: `w5500` has no API to connect, listen or set a peer, so TCP and UDP cannot work. Its README now says so.
-- Checked but not changed, because they ran on a board or are held back and no board is available to retest: `w25qxx`, `qmi8658a`, `qmc5883p`, `xgzp6816d` and `air780eg`. `w25qxx_chip_erase` gives up after about 0.4 s while the chip needs 20 s or more. `air780eg` takes a plain OK as the end of any command. `xgzp6816d` was checked against the sibling GZP6816D only.
+- Checked but not changed, because they ran on a board or are held back and no board is available to retest: `w25qxx`, `qmi8658a`, `qmc5883p`, `xgzp6816d` and `air780eg`. `w25qxx_chip_erase` gives up after about 0.4 s while the chip needs 20 s or more. `air780eg` took a plain OK as the end of any command until its fix on 2026-11-07. `xgzp6816d` was checked against the sibling GZP6816D only.
 - `delay_ms` is now required by `aht20`, `enc28j60`, `max30102`, `pca9685` and `sht30`, and by `bh1750` in one-time modes. `at24cxx` waits 20 ms per write unless `AT24CXX_WRITE_CYCLE_MS` says less. `hx711` and `bh1750` init take longer. `icm42688_read` returns `ICM42688_ERR_NOT_READY` until the first sample. Each README says what changed.
 
 ## API fixes approved after the datasheet check (2026-11-06)
@@ -119,7 +218,7 @@ These drivers could not follow their manuals through the old HAL or config, so t
 | `mcp4728` | `vref_internal`, `gain_x2` in the config | Every write moved the channel to VDD and gain x1 |
 | `bmp388` | none | SKIP measured at x1. It now clears the enable bit, and `{ .addr = x }` alone returns `BMP388_ERR_PARAM` |
 
-`mcp2515` waits 128 us after a wake, which follows the manual but says nothing about crystal start-up, so check it on a board. `pac1952` still has a fixed address of 0x10. With temperature set to SKIP, `bmp388` reuses the temperature measured in init.
+`mcp2515` waits 128 us after a wake, which follows the manual but says nothing about crystal start-up, so check it on a board. `pac1952` had a fixed address of 0x10 until 2026-11-07. With temperature set to SKIP, `bmp388` reuses the temperature measured in init.
 
 ## Fixed by the full sanitizer audit (2026-11-06)
 
