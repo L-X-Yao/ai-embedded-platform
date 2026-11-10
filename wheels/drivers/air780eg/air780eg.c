@@ -62,17 +62,19 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
         return;
     }
 
-    /* TCP/MQTT disconnect */
-    if (starts_with(line, "+IPCLOSE:") || starts_with(line, "CLOSED")) {
+    /* TCP/MQTT disconnect (manual p.249) */
+    if (starts_with(line, "CLOSED")) {
         if (dev->disconnect_cb != NULL) {
             dev->disconnect_cb(dev->disconnect_user);
         }
         return;
     }
 
-    /* PDP context deactivation */
-    if (strstr(line, "PDP: DEACT") != NULL ||
-        starts_with(line, "+CGEV: NW DEACT")) {
+    /* PDP context deactivation: +PDP DEACT (p.249), +PDP:DEACT (p.173),
+     * +CGEV: NW PDN DEACT and +CGEV: ME PDN DEACT (p.137). */
+    if ((starts_with(line, "+PDP") && strstr(line, "DEACT") != NULL) ||
+        starts_with(line, "+CGEV: NW PDN DEACT") ||
+        starts_with(line, "+CGEV: ME PDN DEACT")) {
         if (dev->pdp_deact_cb != NULL) {
             dev->pdp_deact_cb(dev->pdp_deact_user);
         }

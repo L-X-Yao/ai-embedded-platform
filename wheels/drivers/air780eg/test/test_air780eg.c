@@ -244,26 +244,57 @@ TEST(test_urc_disconnect)
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_disconnect(&dev, on_disconnect, NULL);
-    feed_line(&dev, "+IPCLOSE: 0,1");
+    feed_line(&dev, "CLOSED");
     ASSERT_EQ(1, g_disconnect_count);
 }
 
-/*
- * +CGEV: NW DEACT 1 here and PDP: DEACT below are the driver's strings, not the
- * manual's. The manual gives +CGEV: NW PDN DEACT 1 (p.138), +CGEV: ME PDN DEACT
- * (p.137), +PDP DEACT (p.249) and +PDP:DEACT (p.173), and the driver fires on
- * none of them. It is held back, so these tests stay until that is decided: they
- * only show the callback plumbing, not that a real URC reaches it.
- */
+/* +IPCLOSE: is in neither the manual nor flybox's board-tested driver. The
+ * documented TCP drop is CLOSED (p.249). */
+TEST(test_urc_ipclose_is_not_a_documented_drop)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_disconnect(&dev, on_disconnect, NULL);
+    feed_line(&dev, "+IPCLOSE: 0,1");
+    ASSERT_EQ(0, g_disconnect_count);
+}
+
+/* The manual's strings: +CGEV: NW PDN DEACT 1 (p.138), +CGEV: ME PDN DEACT
+ * (p.137), +PDP DEACT (p.249) and +PDP:DEACT (p.173). */
 TEST(test_urc_pdp_deact)
+{
+    static const char *const urcs[] = {
+        "+CGEV: NW PDN DEACT 1",
+        "+CGEV: ME PDN DEACT 1",
+        "+CGEV: ME PDN DEACT 1,2",
+        "+PDP DEACT",
+        "+PDP:DEACT",
+    };
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_pdp_deact(&dev, on_pdp_deact, NULL);
+    for (size_t i = 0; i < sizeof(urcs) / sizeof(urcs[0]); i++) {
+        feed_line(&dev, urcs[i]);
+        ASSERT_EQ((int)i + 1, g_pdp_deact_count);
+    }
+}
+
+/* AT+CIPSTATUS prints the state name PDP DEACT (p.163): a status reply, not the
+ * URC, and the activation event of p.138 is not a loss either. */
+TEST(test_status_lines_are_not_a_pdp_deact)
 {
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_pdp_deact(&dev, on_pdp_deact, NULL);
-    feed_line(&dev, "+CGEV: NW DEACT 1");
-    ASSERT_EQ(1, g_pdp_deact_count);
+    feed_line(&dev, "STATE: PDP DEACT");
+    feed_line(&dev, "+CGEV: ME PDN ACT 1,0");
+    ASSERT_EQ(0, g_pdp_deact_count);
 }
 
 TEST(test_urc_rdy)
@@ -489,13 +520,13 @@ TEST(test_urc_closed_bare)
 
 TEST(test_urc_pdp_deact_bare)
 {
-    /* "PDP: DEACT" triggers pdp_deact callback via strstr check */
+    /* The form the manual tells the host to act on, p.249 */
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_pdp_deact(&dev, on_pdp_deact, NULL);
-    feed_line(&dev, "PDP: DEACT");
+    feed_line(&dev, "+PDP DEACT");
     ASSERT_EQ(1, g_pdp_deact_count);
 }
 
@@ -712,24 +743,24 @@ TEST(test_send_cmd_null_expect_clears_expect)
 
 TEST(test_urc_disconnect_no_cb)
 {
-    /* IPCLOSE URC with no disconnect callback registered must not crash */
+    /* CLOSED URC with no disconnect callback registered must not crash */
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     /* No disconnect_cb registered */
-    feed_line(&dev, "+IPCLOSE: 0,1");
+    feed_line(&dev, "CLOSED");
     ASSERT_EQ(0, g_disconnect_count);
 }
 
 TEST(test_urc_pdp_deact_no_cb)
 {
-    /* PDP: DEACT URC with no pdp_deact callback registered must not crash */
+    /* +PDP DEACT URC with no pdp_deact callback registered must not crash */
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
-    feed_line(&dev, "PDP: DEACT");
+    feed_line(&dev, "+PDP DEACT");
     ASSERT_EQ(0, g_pdp_deact_count);
 }
 
@@ -822,7 +853,9 @@ TEST_MAIN("air780eg")
     RUN(test_urc_mqtt_rx);
     RUN(test_urc_mqtt_rx_manual_sample);
     RUN(test_urc_disconnect);
+    RUN(test_urc_ipclose_is_not_a_documented_drop);
     RUN(test_urc_pdp_deact);
+    RUN(test_status_lines_are_not_a_pdp_deact);
     RUN(test_urc_rdy);
     RUN(test_urc_nmea);
     RUN(test_urc_csq);

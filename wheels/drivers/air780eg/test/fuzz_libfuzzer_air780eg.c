@@ -150,8 +150,8 @@ static void op_command(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
 
 static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     static const char *const replies[] = {
-        "OK", "ERROR", "+CME ERROR: 3", "+CMS ERROR: 1", "RDY", "CLOSED", "+IPCLOSE: 1",
-        "PDP: DEACT", "+CGEV: NW DEACT", "$GNGGA,1", "$GPRMC,2", "$GNRMC", "$GNGSA",
+        "OK", "ERROR", "+CME ERROR: 3", "+CMS ERROR: 1", "RDY", "CLOSED", "+PDP:DEACT",
+        "+PDP DEACT", "+CGEV: NW PDN DEACT 1", "$GNGGA,1", "$GPRMC,2", "$GNRMC", "$GNGSA",
         "$GPGGA", "text", "",
     };
     size_t pick = fuzz_u8(in) % (sizeof(replies) / sizeof(replies[0]));
