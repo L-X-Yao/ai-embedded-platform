@@ -16,7 +16,7 @@ jobs:
 
   wheel-audit:
     name: wheel audit (63 checks) + doc drift
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
 
   spdx-check:
     name: SPDX license headers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
 
   detect-changes:
     name: detect changed wheels
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       actions: read
@@ -176,7 +176,7 @@ jobs:
     name: all wheels (host C99, parallel)
     needs: detect-changes
     if: needs.detect-changes.outputs.full-run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -193,7 +193,7 @@ jobs:
     name: ${{ matrix.name }} wheel (host C99)
     needs: detect-changes
     if: needs.detect-changes.outputs.has-wheels == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -222,7 +222,7 @@ jobs:
     name: log wheel (host C99 + pytest)
     needs: detect-changes
     if: needs.detect-changes.outputs.log-changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     defaults:
       run:
@@ -257,7 +257,7 @@ jobs:
     name: crc16 wheel (host C99 + pytest)
     needs: detect-changes
     if: needs.detect-changes.outputs.crc16-changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     defaults:
       run:
@@ -294,7 +294,7 @@ jobs:
     name: examples (build + run)
     needs: detect-changes
     if: needs.detect-changes.outputs.examples-changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -333,7 +333,7 @@ jobs:
     name: ARM cross-compile smoke
     needs: detect-changes
     if: needs.detect-changes.outputs.wheels-touched == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
