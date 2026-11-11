@@ -6,7 +6,7 @@ runs:
   steps:
     - name: Restore the toolchain
       id: cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/arm-gcc
         key: arm-gnu-toolchain-13.2.rel1-x86_64
