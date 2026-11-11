@@ -121,7 +121,7 @@ ai-embedded-platform/
 │   ├── philosophy.md               人-AI 分工愿景
 │   ├── wheel-contract.md           轮子合格定义
 │   ├── api-conventions.md          跨 wheel 命名/错误/内存/线程约定
-│   ├── ai-workflow.md              12 类任务标准路径
+│   ├── ai-workflow.md              14 类任务标准路径
 │   ├── debugging-playbook.md       踩坑指南 + VSF 数据结构速查
 │   └── adr/                        11 个架构决策记录
 ├── vsf/                            上游源码（干净，不直接改）
