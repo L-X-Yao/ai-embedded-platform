@@ -50,12 +50,12 @@ ctest --test-dir build --output-on-failure
 
 ## API convention deviations
 
-无。
+None.
 
 ## API review
 
-- 提案日期：2026-04-29
-- 审批人：@user（批量生成，待审）
+- Proposal date: 2026-04-29
+- Reviewer: @L-X-Yao (batch-generated, pending review)
 
 ## Responsible human
 

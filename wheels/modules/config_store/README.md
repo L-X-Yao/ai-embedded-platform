@@ -220,7 +220,7 @@ wheel with zero dependencies.
 ## API review
 
 - Date: 2026-05-01
-- Reviewer: @user (pending)
+- Reviewer: @L-X-Yao (pending)
 - Key decisions: pending first review
 
 ## Responsible human

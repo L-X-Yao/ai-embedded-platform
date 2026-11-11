@@ -165,7 +165,7 @@ void debug_shell_rx(uint8_t byte) {
 ## API review
 
 - Date: 2026-04-28
-- Reviewer: @user (pending)
+- Reviewer: @L-X-Yao (pending)
 - Key decisions: pending first review
 
 ## Responsible human

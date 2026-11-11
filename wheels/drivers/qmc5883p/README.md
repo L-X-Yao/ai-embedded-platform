@@ -102,7 +102,7 @@ None.
 ## API review
 
 - Date: 2026-04-27
-- Reviewer: @user
+- Reviewer: @L-X-Yao
 - Key decisions: wake register (0x0D) hidden inside init (not exposed to caller); output in Gauss not raw counts; minimal 2-function API (init + read)
 
 ## Responsible human

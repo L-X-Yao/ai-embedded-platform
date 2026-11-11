@@ -121,7 +121,7 @@ Temperature: `(t_raw / 65536) * 190 - 40`, range -40 to ~150 C.
 ## API review
 
 - Date: 2026-04-27
-- Reviewer: @user
+- Reviewer: @L-X-Yao
 - Key decisions: split trigger/read (no RTOS dep); generic I2C HAL instead of register-paired (matches hardware protocol); dual-rail pressure clamp
 
 ## Responsible human

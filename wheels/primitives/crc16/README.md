@@ -29,7 +29,7 @@ None.
 /* One-shot bulk computation */
 uint16_t crc16_modbus(const uint8_t *data, size_t len);
 
-/* Streaming single-byte step (DMA / 网络收包用) */
+/* Streaming single-byte step (for DMA or network receive) */
 uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 ```
 
@@ -52,7 +52,7 @@ cmake --build test/build
 python3 -m pytest test/test_crc16.py -v
 ```
 
-预期：**1 个 C 测试 harness（12 个内嵌 case） + 9 个 pytest 用例全绿。**
+Expected: **1 C test harness (12 built-in cases) and 9 pytest cases, all passing.**
 
 ## Test status
 
@@ -73,7 +73,7 @@ python3 -m pytest test/test_crc16.py -v
 
 ## API convention deviations
 
-无。函数命名 `crc16_<verb>` 符合 api-conventions.md §1.1。
+None. Function names follow `crc16_<verb>` as api-conventions.md §1.1 asks.
 
 ## Performance reference
 
@@ -115,13 +115,13 @@ while (rx_byte_available()) {
 
 ## API review
 
-- 提案日期：2026-04-26
-- 审批人：@user
-- 关键决策：
-  - 第一版只装 MODBUS variant（不做 CCITT-FALSE / KERMIT 等其他多项式）
-  - 接受 "crc16" wheel 名（不叫 crc16_modbus），明确 README 写"目前只 MODBUS"
-  - 提供 step API（streaming）+ bulk API 两种
-  - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
+- Proposal date: 2026-04-26
+- Reviewer: @L-X-Yao
+- Key decisions:
+  - The first version ships the MODBUS variant only (no CCITT-FALSE, KERMIT or other polynomials)
+  - The wheel is named "crc16", not crc16_modbus, and the README says that only MODBUS is supported for now
+  - Both a step (streaming) API and a bulk API
+  - No dependency on VSF (`vsf_crc()` does not implement the reflected MODBUS algorithm)
 
 ## Responsible human
 

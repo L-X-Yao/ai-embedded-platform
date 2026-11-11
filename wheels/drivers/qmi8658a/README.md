@@ -106,7 +106,7 @@ None.
 ## API review
 
 - Date: 2026-04-25
-- Reviewer: @user
+- Reviewer: @L-X-Yao
 - Key decisions: expose `default_cfg()` for common defaults; output in physical units (G / deg/s) not raw counts; separate `reset()` from `init()`
 
 ## Responsible human

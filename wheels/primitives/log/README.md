@@ -195,7 +195,7 @@ log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
 ## API review
 
 - Proposal date: 2026-04-21
-- Reviewer: @user
+- Reviewer: @L-X-Yao
 - Key decisions: accepted all default recommendations (Q1-Q5 per AI suggestion)
 
 ## Responsible human

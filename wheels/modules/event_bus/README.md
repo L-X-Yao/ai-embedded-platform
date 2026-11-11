@@ -74,7 +74,7 @@ None.
 ## API review
 
 - Proposal date: 2026-05-01
-- Reviewer: @user (pending)
+- Reviewer: @L-X-Yao (pending)
 
 ## Responsible human
 

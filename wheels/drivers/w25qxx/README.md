@@ -111,7 +111,7 @@ None.
 ## API review
 
 - Date: 2026-04-25
-- Reviewer: @user
+- Reviewer: @L-X-Yao
 - Key decisions: generalized name from w25q64 to w25qxx (covers W25Q32/64/128 family); SPI HAL uses cs_low/cs_high/xfer callback triple
 
 ## Responsible human
