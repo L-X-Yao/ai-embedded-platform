@@ -110,6 +110,11 @@ case "$LAYER" in
     *)          LAYER_LABEL="$LAYER" ;;
 esac
 
+# Status follows the layer (docs/wheel-contract.md section 0): draft under
+# _draft/, candidate elsewhere, where make wheel-gate must pass before commit.
+STATUS="candidate"
+if [[ "$LAYER" == "_draft" ]]; then STATUS="draft"; fi
+
 # --- Resolve --deps paths -----------------------------------------------------
 # Each dep is a wheel name (e.g. "mqtt_packet"). We find its directory and
 # generate CMakeLists source + include entries.
@@ -142,7 +147,7 @@ generate_header_i2c() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      i2c_hal (injected)
  * Instances: multi
  */
@@ -217,7 +222,7 @@ generate_header_spi() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      spi_hal (injected)
  * Instances: multi
  */
@@ -278,7 +283,7 @@ generate_header_gpio() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      gpio_hal (injected)
  * Instances: multi
  */
@@ -338,7 +343,7 @@ generate_header_onewire() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      onewire_hal (injected)
  * Instances: multi
  */
@@ -399,7 +404,7 @@ generate_header_pwm() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      pwm_hal (injected)
  * Instances: multi
  */
@@ -455,7 +460,7 @@ generate_header_none() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
@@ -509,7 +514,7 @@ generate_c_i2c() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      i2c_hal (injected)
  * Instances: multi
  */
@@ -553,7 +558,7 @@ generate_c_spi() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      spi_hal (injected)
  * Instances: multi
  */
@@ -590,7 +595,7 @@ generate_c_gpio() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      gpio_hal (injected)
  * Instances: multi
  */
@@ -619,7 +624,7 @@ generate_c_onewire() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      onewire_hal (injected)
  * Instances: multi
  */
@@ -650,7 +655,7 @@ generate_c_pwm() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      pwm_hal (injected)
  * Instances: multi
  */
@@ -678,7 +683,7 @@ generate_c_none() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
@@ -1790,7 +1795,7 @@ generate_header_protocol() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
@@ -1849,7 +1854,7 @@ generate_c_protocol() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
@@ -2027,7 +2032,7 @@ generate_standard_readme() {
     cat > "$WHEEL_DIR/README.md" << README_EOF
 # ${NAME_LOWER} — TODO: one-line description
 
-**Status: candidate**
+**Status: ${STATUS}**
 **Layer: ${LAYER_LABEL}**
 
 TODO: 2-3 sentence description.
@@ -2195,7 +2200,7 @@ generate_vendor_readme() {
     cat > "$WHEEL_DIR/README.md" << README_EOF
 # ${NAME_LOWER} — TODO: one-line description
 
-**Status: candidate**
+**Status: ${STATUS}**
 
 TODO: 2-3 sentence description.
 
@@ -2270,7 +2275,7 @@ generate_header_module() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
@@ -2340,7 +2345,7 @@ generate_c_module() {
  * ${NAME_LOWER} — TODO: one-line description
  *
  * Layer:     ${LAYER_LABEL%% (*}
- * Status:    candidate
+ * Status:    ${STATUS}
  * Deps:      (none)
  * Instances: multi
  */
