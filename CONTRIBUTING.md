@@ -1,5 +1,7 @@
 # Contributing
 
+The project has been in maintenance since 2026-11-10. Bug fixes, hardware test results and corrections to the docs are welcome; new wheels and API changes are not being taken for now. Hardware results have their own issue form, and security problems are reported privately, see [SECURITY.md](SECURITY.md). The wheel sections below describe the process for when development resumes.
+
 ## Quick start
 
 ```bash

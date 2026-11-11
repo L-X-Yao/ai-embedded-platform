@@ -2,6 +2,8 @@
 
 259 个零依赖的 C99 嵌入式组件，30 天内用 AI 驱动的工作流写成，每个组件都要通过一条自动化验证流水线才能入库。英文版 [README.md](README.md) 是完整文档，这一页只讲四件事：它是什么、验证到什么程度、哪里还不可信、怎么做出来的。
 
+**状态：2026-11-10 起只做维护。** 不再增加新组件和新 API；欢迎缺陷报告、真机测试结果和修复。[v0.1.0](https://github.com/L-X-Yao/ai-embedded-platform/releases/tag/v0.1.0) 是收尾时的版本。
+
 ## 它是什么
 
 - 四层：L0 原语 77 个、L1 驱动 115 个、L2 协议 47 个、L3 模块 20 个，都在 `wheels/`，完整清单见 [wheels/README.md](wheels/README.md)，按总线找驱动见 [docs/mcu-compatibility.md](docs/mcu-compatibility.md)。
@@ -50,4 +52,4 @@ host 之外的证据：
 
 ## 作者
 
-[L-X-Yao](https://github.com/L-X-Yao)，嵌入式工程师，做过飞控、工业设备控制和整车控制器。欢迎 issue 和 PR，其他联系方式见主页。
+[L-X-Yao](https://github.com/L-X-Yao)，嵌入式工程师，做过飞控、工业设备控制和整车控制器。欢迎缺陷报告、真机测试结果和修复类的 PR；安全问题请按 [SECURITY.md](SECURITY.md) 私下报告；其他联系方式见主页。

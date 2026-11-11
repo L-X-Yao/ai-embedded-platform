@@ -10,6 +10,8 @@
 >
 > 中文说明见 [README.zh-CN.md](README.zh-CN.md)。
 
+**Status.** In maintenance since 2026-11-10: no new components or APIs are planned. Bug reports, hardware test results and fixes are welcome. Release [v0.1.0](https://github.com/L-X-Yao/ai-embedded-platform/releases/tag/v0.1.0) is the state at the close-out.
+
 ## Why this library
 
 - **Zero dependencies** -- no OS, no heap, no libc beyond `<stdint.h>`. Every component is a pure C99 static library.
@@ -240,11 +242,11 @@ ai-embedded-platform/
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the quick-start guide, wheel contract, commit format, and testing requirements.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the quick-start guide, wheel contract, commit format, and testing requirements. Report security problems privately, as [SECURITY.md](SECURITY.md) describes.
 
 ## Author
 
-[L-X-Yao](https://github.com/L-X-Yao), embedded systems engineer (flight controllers, industrial machine control, vehicle control units). Issues and pull requests are welcome; for anything else, use the contact on the profile page.
+[L-X-Yao](https://github.com/L-X-Yao), embedded systems engineer (flight controllers, industrial machine control, vehicle control units). Bug reports, hardware test results and pull requests that fix something are welcome; for anything else, use the contact on the profile page.
 
 ## License
 
