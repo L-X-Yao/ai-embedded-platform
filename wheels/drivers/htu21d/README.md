@@ -81,4 +81,4 @@ Uses `write_cmd`/`read_data` HAL instead of `write_reg`/`read_regs` because HTU2
 
 ## Responsible human
 
-@user
+@L-X-Yao

@@ -80,4 +80,4 @@ None.
 - **Key decisions**: Two filter types in one wheel (SMA + EMA) because they share the same use case domain; SMA uses caller-provided buffer (no heap, size known at init); EMA first sample seeds value directly (no lag on startup); alpha must be (0, 1] — 0 rejected because it would mean "ignore all input".
 
 ## Responsible human
-@user
+@L-X-Yao

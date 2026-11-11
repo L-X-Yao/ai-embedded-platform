@@ -83,4 +83,4 @@ None.
 - **Key decisions**: Table-driven (not switch/case) for testability and separation of logic from structure; states and events are uint16_t (not enum) for flexibility; guard functions return bool; self-transitions do NOT call on_exit/on_enter (consistent with UML semantics for internal transitions); first matching transition wins (priority by table order).
 
 ## Responsible human
-@user
+@L-X-Yao

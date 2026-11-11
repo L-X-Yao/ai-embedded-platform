@@ -91,4 +91,4 @@ is command-based (control byte 0x00/0x40 prefix), not register-based.
 - **Key decisions**: Framebuffer-based (not streaming) for flexibility and double-buffering potential; caller provides framebuffer (no heap); pixel coordinates use hardware-native vertical page layout internally but expose (x, y) API; init sends full SSD1306 initialization sequence per datasheet; 128x32 supported via height parameter and COM pin config auto-adjust.
 
 ## Responsible human
-@user
+@L-X-Yao

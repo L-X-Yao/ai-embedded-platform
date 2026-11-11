@@ -87,4 +87,4 @@ because SHT30 uses 16-bit command words rather than 8-bit register addresses.
 - **Key decisions**: CRC-8 verification mandatory (no skip option) for data integrity; soft reset on init to ensure known state; sht30_crc8 exposed as public API for use in custom command sequences; temperature formula per datasheet: T = -45 + 175 * raw / 65535.
 
 ## Responsible human
-@user
+@L-X-Yao

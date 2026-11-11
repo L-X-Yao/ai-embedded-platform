@@ -122,4 +122,4 @@ right. It returns `FAL_ERR_HAL` if an `.init` fails, and can then be retried.
 
 ## Responsible human
 
-@user
+@L-X-Yao

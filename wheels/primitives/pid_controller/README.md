@@ -76,4 +76,4 @@ None.
 - **Key decisions**: Standard positional PID (not velocity form); integral anti-windup via clamping (not back-calculation — simpler, sufficient for most embedded use cases); first derivative step outputs zero to avoid startup spike; dt must be positive (returns 0 on invalid).
 
 ## Responsible human
-@user
+@L-X-Yao

@@ -75,4 +75,4 @@ None.
 - **Key decisions**: Circular buffer with head/tail (classic lock-free SPSC pattern); event_t uses uint32_t data field (fits pointer on 32-bit, or small payload directly); volatile head/tail for ISR safety; capacity-1 usable slots (simpler than counter-based full detection); push returns ERR_FULL instead of overwriting (caller decides drop policy).
 
 ## Responsible human
-@user
+@L-X-Yao

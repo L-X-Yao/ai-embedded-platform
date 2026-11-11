@@ -97,4 +97,4 @@ None.
 - **Key decisions**: Context struct (`bme280_t`) holds calibration + I2C HAL + config — fully reentrant for multi-sensor setups; Bosch compensation, fixed-point for temperature and humidity and double precision for pressure, converted to float at output; forced mode per-read to simplify state management; chip ID check (0x60) on init to fail fast and distinguish from BMP280 (0x58); humidity calibration split across two register blocks (0xA1 + 0xE1..0xE7) per datasheet; `set_oversampling` allows runtime reconfiguration without re-init.
 
 ## Responsible human
-@user
+@L-X-Yao

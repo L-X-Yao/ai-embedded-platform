@@ -94,4 +94,4 @@ because AHT20 uses command-based protocol rather than register addresses.
 - **Key decisions**: CRC-8 verification mandatory for data integrity; calibration check on init with automatic init command if needed; soft reset exposed as public API; aht20_is_calibrated checks cached status byte; temperature formula per datasheet: T = raw/2^20 * 200 - 50; humidity formula: H = raw/2^20 * 100.
 
 ## Responsible human
-@user
+@L-X-Yao

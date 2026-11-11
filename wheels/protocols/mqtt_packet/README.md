@@ -96,4 +96,4 @@ to send over TCP.
 - **Key decisions**: Stateless (no connection state machine — that's a separate concern); caller-provided buffers (no heap); PUBLISH parse returns pointers into the input buffer (zero-copy); remaining length codec exposed as public API for custom packet building; MQTT 3.1.1 only (not 5.0 — complexity not justified for most embedded use cases).
 
 ## Responsible human
-@user
+@L-X-Yao

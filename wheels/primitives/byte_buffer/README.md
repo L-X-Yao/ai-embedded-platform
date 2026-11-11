@@ -83,4 +83,4 @@ None.
 - **Key decisions**: Big-endian only (network byte order, most common in protocols); linear not circular (use vsf_fifo or ring_buffer for circular); compact moves unread data to buffer start (reclaims space without reset); read_ptr exposes raw pointer for zero-copy access; separate read/write cursors (not consume-on-read).
 
 ## Responsible human
-@user
+@L-X-Yao

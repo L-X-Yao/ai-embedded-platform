@@ -96,4 +96,4 @@ None.
 - **Key decisions**: Context struct (`bmp280_t`) holds calibration + I2C HAL + config — fully reentrant for multi-sensor setups; Bosch integer compensation (not floating-point) for MCU compatibility, converted to float at output; forced mode per-read to simplify state management; chip ID check on init to fail fast on wiring errors.
 
 ## Responsible human
-@user
+@L-X-Yao

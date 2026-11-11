@@ -92,4 +92,4 @@ None. Function naming `fnv1a_<width>[_verb]` follows api-conventions.md.
 
 ## Responsible human
 
-@user
+@L-X-Yao

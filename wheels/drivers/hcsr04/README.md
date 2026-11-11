@@ -73,4 +73,4 @@ None.
 - **Key decisions**: Separate trigger/echo pins via HAL callbacks for maximum portability; blocking polling loop for echo measurement; 25000us timeout covers 4.3m max range; range check 2-400cm rejects out-of-spec readings.
 
 ## Responsible human
-@user
+@L-X-Yao

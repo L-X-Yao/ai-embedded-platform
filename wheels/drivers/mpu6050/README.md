@@ -86,4 +86,4 @@ None.
 - **Key decisions**: Separate accel/gyro read functions (not combined) to allow selective sampling; output in physical units (g, dps) not raw counts; device reset + PLL clock source set on init; WHO_AM_I check to fail fast on wiring errors; scale factors from datasheet sensitivity tables.
 
 ## Responsible human
-@user
+@L-X-Yao

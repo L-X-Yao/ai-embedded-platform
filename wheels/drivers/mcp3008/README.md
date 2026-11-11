@@ -82,4 +82,4 @@ None.
 - **Key decisions**: Bulk transfer HAL (3-byte tx/rx) instead of byte-at-a-time xfer for better SPI DMA compatibility; cs_select returns bool for error propagation; separate single/diff/voltage APIs for clarity; 1024.0 divisor per DS21295D Equation 4-2.
 
 ## Responsible human
-@user
+@L-X-Yao

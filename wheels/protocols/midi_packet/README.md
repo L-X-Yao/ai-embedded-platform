@@ -94,4 +94,4 @@ to send over UART.
 - **Key decisions**: Streaming byte-at-a-time parser (MIDI arrives one byte at a time over UART, buffering full messages externally is wasteful); running status support (mandatory for real-world MIDI streams where repeated status bytes are omitted); Note On with velocity 0 mapped to Note Off (per MIDI 1.0 spec); pitch bend as signed -8192..+8191 (center=0, matching musical semantics rather than raw 14-bit encoding); SysEx buffer size configurable via compile-time macro (embedded systems need bounded memory).
 
 ## Responsible human
-@user
+@L-X-Yao

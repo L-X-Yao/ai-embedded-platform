@@ -71,4 +71,4 @@ None.
 - **Key decisions**: clamp (not extrapolate) beyond endpoints; strictly ascending x required; binary search for O(log n) lookup
 ## Responsible human
 
-@user
+@L-X-Yao

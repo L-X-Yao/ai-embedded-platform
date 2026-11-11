@@ -99,4 +99,4 @@ byte, then a repeated START, then reads the word and its PEC.
 - **Key decisions**: Command-based I2C HAL (`write_read` added 2026-11-06: a read is one transaction with a repeated START, not two); context struct holds I2C HAL + config — fully reentrant for multi-sensor setups; emissivity range validated to 0.1-1.0; EEPROM erase-then-write sequence per datasheet; error flag bit (0x8000) checked on temperature reads.
 
 ## Responsible human
-@user
+@L-X-Yao

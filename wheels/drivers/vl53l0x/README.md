@@ -96,4 +96,4 @@ None.
 - **Key decisions**: Context struct (`vl53l0x_t`) holds I2C HAL + config + timing budget — fully reentrant for multi-sensor setups; simplified init (no SPAD/ref/temp calibration) to keep ~150 lines; split API (start_single + is_ready) alongside blocking read_range_mm for flexibility; 8190 sentinel detection returns ERR_RANGE; timing budget validated to 20-500 ms range.
 
 ## Responsible human
-@user
+@L-X-Yao
