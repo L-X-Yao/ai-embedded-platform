@@ -85,6 +85,8 @@ ai-embedded-platform/    (整个私有 monorepo)
 - 每项目在 CLAUDE.md 锁定用的 tag
 - wheel 破坏性更新 → major +1 + 写 MIGRATION.md
 
+**2026-11-11 修订**：改为整个仓库一个平台版本 tag（从 `v0.1.0` 开始），不再给单个 wheel 打 tag。按 wheel 打 tag 只在 2026-04-28 做过一次（19 个），之后没有维护，那 19 个 tag 已删除。规则见 `api-conventions.md` §11。
+
 ## 何时应重新评估
 
 - 仓库大小 > 10 GB 影响 clone

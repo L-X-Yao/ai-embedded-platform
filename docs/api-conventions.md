@@ -633,21 +633,16 @@ extern "C" {
 
 ## 11. 版本
 
-wheel 内部不写死版本号。版本 = git tag。
+wheel 内部不写死版本号，也不单独打 tag。版本 = 整个仓库的平台版本 tag `v<MAJOR>.<MINOR>.<PATCH>`，流程见 `ai-workflow.md` 任务类型 12。某个 wheel 改了什么，看 `CHANGELOG.md` 和这个 wheel 的 README。
 
-**Tag 格式**：`wheel/<name>/v<MAJOR>.<MINOR>.<PATCH>`
-
-```bash
-git tag -a "wheel/crc16/v0.1.0" -m "crc16 v0.1.0: initial candidate release"
-git push origin --tags
-```
-
-- `v0.1.0` = 首次 candidate release
-- MAJOR 升级 = API 破坏性变更
+- MAJOR 升级 = 有 wheel API 破坏性变更
 - MINOR 升级 = 新功能，向后兼容
 - PATCH 升级 = bug fix
+- `0.x` = 还没有 stable 级的 wheel（见 `wheel-contract.md` §0），API 仍可能变
 
-项目可通过 tag 锁定 wheel 版本（monorepo 内用 commit hash 引用即可，tag 作为可读标记）。
+项目锁定版本：在项目 CLAUDE.md 记平台版本 tag，或直接记提交号。
+
+2026-11-11 起按此执行。此前的规则是每个 wheel 一个 tag（`wheel/<name>/v0.1.0`），只在 2026-04-28 给 19 个 wheel 打过一次，之后再没打过。那 19 个 tag 指向 4 月的代码，已于 2026-11-11 删除；平台版本从 v0.1.0 开始。
 
 ### 11.1 API 废弃
 

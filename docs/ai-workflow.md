@@ -27,7 +27,7 @@
 4. **写项目 CLAUDE.md**：
    - 项目目标（一段话）
    - 硬件选型
-   - 使用的 wheels（引用 `wheels/...`，锁 git tag 版本）
+   - 使用的 wheels（引用 `wheels/...`，锁平台版本 tag 或提交号）
    - 项目特定约定
    - wheel 候选清单（从项目代码识别的可抽取组件）
 4.5. **同步 WISHLIST**：项目 CLAUDE.md 的 wheel 候选清单 → `wheels/WISHLIST.md` 对应行触发计数 +1（跨项目 ≥3 升级阈值需要此数据）
@@ -277,8 +277,12 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 3. 用户确认版本号
 4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 更新 CHANGELOG.md，不打 tag（直接调脚本：`make release` 传不了版本号）
 5. `git add CHANGELOG.md && git commit -m "docs: add v<X.Y.Z> release notes"`
-6. `git tag v<X.Y.Z>` — tag 打在这个 commit 上
-7. `git push && git push --tags`
+6. `git tag -a v<X.Y.Z>` — tag 打在这个 commit 上
+7. `git push && git push origin v<X.Y.Z>`
+
+内部仓和公开仓用同一份 CHANGELOG.md，打同名 tag：
+- 第 4 步在公开仓的克隆里运行 `release.sh`，提交列表就只含公开历史，内部仓的提交说明不会带出去。生成的 CHANGELOG.md 提交到内部仓，再随同步带回公开仓。
+- 两个仓库各自在这次 CHANGELOG 提交上打 tag；公开仓再用 `gh release create` 发 Release，写明验证状态。
 
 项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
 
