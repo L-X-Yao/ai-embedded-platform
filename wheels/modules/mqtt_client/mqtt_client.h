@@ -119,7 +119,12 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize client. @thread_safe: no @isr_safe: no */
+/** Initialize client. cfg is copied, the strings it points to are not:
+ *  client_id, username and password are kept by pointer and read again by
+ *  every mqtt_client_connect(). They must stay valid and unchanged for as
+ *  long as c is in use: string literals or static arrays. A stack buffer
+ *  gives a dead client id or login, with no error.
+ *  @thread_safe: no @isr_safe: no */
 mqtt_client_err_t mqtt_client_init(mqtt_client_t *c,
                                    const mqtt_client_io_t *io,
                                    const mqtt_client_cfg_t *cfg);

@@ -83,6 +83,12 @@ sched_err_t scheduler_init(scheduler_t *s);
 
 /** Register a periodic task.
  *  @param interval_ticks  Tick interval between runs. 0 = run every tick.
+ *
+ *  The name is kept by pointer, not copied, and is read again by every
+ *  scheduler_enable(), scheduler_disable(), scheduler_remove() and
+ *  scheduler_get_run_count(). It must stay valid and unchanged for as long as
+ *  s is in use: a string literal or a static array. A stack buffer, or one
+ *  buffer reused for several names, gives wrong or dead names and no error.
  *  @thread_safe: no */
 sched_err_t scheduler_add(scheduler_t *s, const char *name,
                           sched_task_fn fn, void *ctx,

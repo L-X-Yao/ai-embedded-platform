@@ -76,7 +76,12 @@ typedef struct {
 /** Zero-initialise a param table. @thread_safe: no */
 param_err_t param_table_init(param_table_t *pt);
 
-/** Define a new parameter with a default value. @thread_safe: no */
+/** Define a new parameter with a default value.
+ *  The key is kept by pointer, not copied, and is read again by every call
+ *  that takes a key and by param_table_list(). It must stay valid and
+ *  unchanged for as long as pt is in use: a string literal or a static array.
+ *  A stack buffer, or one buffer reused for several keys, gives wrong or dead
+ *  keys and no error. @thread_safe: no */
 param_err_t param_table_define(param_table_t *pt, const char *key,
                                const char *default_val, bool readonly);
 

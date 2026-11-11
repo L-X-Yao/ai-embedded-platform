@@ -95,6 +95,12 @@ cli_shell_err_t cli_shell_init(cli_shell_t *sh, const cli_shell_io_t *io,
 
 /**
  * Register a command. Returns ERR_FULL if table is full.
+ *
+ * name and help are kept by pointer, not copied: name is compared with the
+ * first word of every command line, and the built-in help command prints
+ * both. They must stay valid and unchanged for as long as sh is in use:
+ * string literals or static arrays. A stack buffer, or one buffer reused for
+ * several commands, gives wrong or dead names and no error.
  * @thread_safe: no
  */
 cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,

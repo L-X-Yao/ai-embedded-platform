@@ -102,6 +102,13 @@ power_manager_err_t power_manager_init(power_manager_t *pm,
 
 /**
  * Register a voter (module that can veto sleep).
+ *
+ * The name is kept by pointer, not copied, and power_manager_voter_name()
+ * returns that pointer. It must stay valid and unchanged for as long as pm
+ * is in use: a string literal or a static array. A stack buffer gives a dead
+ * name, and one buffer reused for several voters gives them all its last
+ * contents, with no error.
+ *
  * @param name       Human-readable label (for debug)
  * @param max_sleep  Deepest sleep this voter allows when active
  * @param timeout_ms Activity auto-expires after this (0 = no timeout),

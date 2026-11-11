@@ -109,7 +109,12 @@ void          at_command_expect_final(at_command_t *at, const char *info);
 void          at_command_cancel(at_command_t *at);
 /** Feed one received byte. @thread_safe: caller_must_lock */
 at_command_evt_type_t at_command_feed(at_command_t *at, uint8_t byte, at_command_evt_t *evt);
-/** Register URC handler. @thread_safe: caller_must_lock */
+/** Register URC handler.
+ *  The prefix is kept by pointer, not copied, and is compared with incoming
+ *  lines and by at_command_unregister_urc(). It must stay valid and unchanged
+ *  for as long as at is in use: a string literal or a static array. A stack
+ *  buffer, or one buffer reused for several prefixes, gives wrong or dead
+ *  prefixes and no error. @thread_safe: caller_must_lock */
 int           at_command_register_urc(at_command_t *at, const char *prefix,
                                    at_command_urc_cb_t cb, void *ctx);
 /** Unregister URC handler by prefix. @thread_safe: caller_must_lock */

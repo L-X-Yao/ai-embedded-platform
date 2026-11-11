@@ -107,7 +107,15 @@ typedef struct {
 config_store_err_t config_store_init(config_store_t *cs,
                                      const config_store_storage_t *storage);
 
-/* --- Define entries (call at startup) --- */
+/* --- Define entries (call at startup) ---
+ *
+ * Each config_store_define_*() keeps its key by pointer, not copied. The key
+ * is read again by every get and set by key, and config_store_save_all() and
+ * config_store_load_all() hand it to the storage callbacks. It must stay
+ * valid and unchanged for as long as cs is in use: a string literal or a
+ * static array. A stack buffer, or one buffer reused for several keys, gives
+ * wrong or dead keys and no error.
+ */
 
 /** @thread_safe: no */
 config_store_err_t config_store_define_int(config_store_t *cs,
