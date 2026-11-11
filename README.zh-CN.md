@@ -40,11 +40,11 @@ host 之外的证据：
 - **只有上面五个组件上过真机。** 其余驱动跑的是模拟寄存器模型，其中不少模型和驱动一起写成，把同样的错误也写了进去，所以测试是绿的不代表寄存器值是对的，问题要到板子上才暴露。
 - **datasheet 抽检查出了真缺陷，比例还很高。** 常见芯片（BMP280、MPU6050、SHT30 这一类）的驱动约 16% 有问题，冷门芯片 5 个抽查 3 个有问题，类型是寄存器偏移错、少位掩码、少符号扩展。2026 年 11 月换了更严的逐项核对，查了全部 104 个有寄存器或协议的驱动，确认约 515 条缺陷。其中约 295 条在 84 个驱动的代码里，从产品 ID 写错到 CRC 表让真机读取失败都有；约 220 条在测试模型里，另有 14 个驱动只有模型有问题。先前判定没问题的驱动也查出了缺陷。不用改 HAL 或大改的驱动缺陷已修复，但这些修复同样没上过真机；测试模型只修了驱动修复用到的部分；`bmi270`、`vl53l1x`、`vl53l0x` 标为不可用；`w5500` 还不支持 TCP 和 UDP；`w25qxx`、`qmi8658a`、`qmc5883p`、`xgzp6816d`、`air780eg` 查过但没改，等有板子能复测再说。详见 [docs/known-issues.md](docs/known-issues.md)。
 - **不带 RTOS，也不带 MCU HAL。** 总线回调由你提供。`vsf-addon/` 里有一个 GD32F4xx 的 VSF HAL 移植作为完整示例，`vsf/` 是为它保留的上游原样快照。
-- **许可证。** 组件是 MIT；`wheels/primitives/kvs/vendor/` 的 FlashDB 和 `vsf/` 快照是 Apache-2.0，各自保留原有声明。
+- **许可证。** 组件是 MIT；`wheels/primitives/kvs/vendor/` 的 FlashDB 和 `vsf/` 快照是 Apache-2.0，各自保留原有声明；`vsf-addon/hal/driver/gd/GD32F4XX/` 里带 VSF Apache-2.0 文件头的文件也按 Apache-2.0。
 
 ## 怎么做出来的
 
-- **时间**：2026-04-21 到 05-20，约 1170 次提交。一名嵌入式工程师指挥 Claude Code，经常是几个 agent 在不同的 git worktree 里并行。
+- **时间**：2026-04-21 到 05-20，约 1170 次提交。一名嵌入式工程师指挥 Claude Code，经常是几个 agent 在不同的 git worktree 里并行。2026 年 11 月做了一轮加固（57 个 fuzz 目标、104 个驱动逐寄存器对照 datasheet、第十轮全面审计）并收尾，又约 930 次提交。
 - **分工**：人定需求、审 API、做架构决策（[11 个 ADR](docs/adr/README.md)）、做审计和真机测试；AI 实现、写测试、写文档、跑工具链。
 - **约束 AI 的文件**：[CLAUDE.md](CLAUDE.md) 是 agent 的常驻工作规范，[docs/wheel-contract.md](docs/wheel-contract.md) 定义组件必须是什么样，[docs/api-conventions.md](docs/api-conventions.md) 定命名和错误处理，[docs/ai-workflow.md](docs/ai-workflow.md) 是 14 类任务的做法，[docs/debugging-playbook.md](docs/debugging-playbook.md) 是踩过的坑，防止再踩。
 - **工具链为什么存在**：生成很快，一个典型驱动从脚手架到测试全绿约 15 分钟，上一节的缺陷率就是"快"在没有检查时的代价。`tooling/` 下的每个工具，都是为某一类已经漏过去一次的 bug 补上的。

@@ -5,6 +5,7 @@ The project has been in maintenance since 2026-11-10. Bug fixes, hardware test r
 ## Quick start
 
 ```bash
+git config core.hooksPath .githooks   # commit-msg, pre-commit and pre-push checks
 make bootstrap    # see project state
 make check        # tests + audit + doc-drift
 ```
@@ -26,7 +27,7 @@ Every wheel must be a passive library: no OS calls, no heap allocation, no task 
 <type>(<scope>): <summary>
 ```
 
-Types: `wheel`, `tool`, `docs`, `ci`, `project`, `port`, `exp`. See `CLAUDE.md` for the complete reference.
+Types: `wheel`, `tool`, `docs`, `ci`, `project`, `port`, `exp`, `example`. See `CLAUDE.md` (Chinese) for the complete reference.
 
 ## Code style
 

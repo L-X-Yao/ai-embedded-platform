@@ -18,7 +18,7 @@ git config core.hooksPath .githooks
 
 ## What it checks
 
-- Type is from allowed set: `docs`, `wheel`, `exp`, `port`, `project`, `tool`, `ci`
+- Type is from allowed set: `docs`, `wheel`, `exp`, `port`, `project`, `tool`, `example`, `ci`
 - Summary starts with lowercase imperative verb
 - No trailing period on summary
 - Summary line <= 70 chars
