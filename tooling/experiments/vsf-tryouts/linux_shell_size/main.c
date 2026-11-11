@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #define __VSF_SIMPLE_STREAM_CLASS_INHERIT__
 #include "vsf.h"
 #include <unistd.h>

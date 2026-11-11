@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef __VSF_USR_CFG_H__
 #define __VSF_USR_CFG_H__
 
