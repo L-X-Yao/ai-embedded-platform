@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * diff_crc16.c -- differential test driver for crc16 wheel
  *

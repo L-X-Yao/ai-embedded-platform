@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * diff_base64.c -- differential test driver for base64 wheel
  *

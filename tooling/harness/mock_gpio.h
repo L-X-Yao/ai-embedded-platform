@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_gpio.h — shared GPIO mock for L1 driver tests
  *

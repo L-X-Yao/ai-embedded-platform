@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * diff_hex_codec.c -- differential test driver for hex_codec wheel
  *

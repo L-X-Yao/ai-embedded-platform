@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_alloc.h — heap-allocation tripwire for wheel tests
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * contract.h — Design by Contract macros for wheels
  *

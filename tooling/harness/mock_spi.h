@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_spi.h — shared SPI mock infrastructure for L1 driver tests
  *

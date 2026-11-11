@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_i2c.h — shared I2C register mock for L1 driver tests
  *

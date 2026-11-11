@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_time.h — shared delay and tick mock for wheel tests
  *

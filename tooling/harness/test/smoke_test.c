@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * smoke_test.c — sanity check that test_harness.h, mock_spi.h, and
  * mock_alloc.h compile and behave correctly with the new features.
