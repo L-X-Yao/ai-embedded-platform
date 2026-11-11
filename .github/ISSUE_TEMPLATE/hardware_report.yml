@@ -1,0 +1,47 @@
+name: Hardware test report
+description: How a component behaved on a real board, working or not.
+title: "[hardware] "
+labels: ["hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Only five components have run on a board so far (see Verification status in the README). A board report, good or bad, is part of the evidence a component needs to move from candidate to stable.
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Path under wheels/, for example wheels/drivers/bmp280
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Tag or commit, for example v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: MCU, board and chip
+      description: For example STM32F411 Nucleo, BMP280 breakout on I2C1 at 400 kHz
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Works as documented
+        - Works after changes (describe them below)
+        - Does not work
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What you ran and what you saw
+      description: Init settings, the bus callbacks, readings or register dumps, logs, and any change you made to the component.
+    validations:
+      required: true

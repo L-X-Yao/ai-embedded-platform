@@ -1,0 +1,44 @@
+name: Bug report
+description: A component gives a wrong result, crashes, or fails to build.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems go through private reporting instead, see [SECURITY.md](https://github.com/L-X-Yao/ai-embedded-platform/blob/main/SECURITY.md).
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Path under wheels/, for example wheels/protocols/mqtt_packet
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Tag or commit, for example v0.1.0 or the output of git rev-parse --short HEAD
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it happens
+      options:
+        - Host build or host tests
+        - Firmware on a board
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Compiler and target
+      description: For example gcc 13.3 on x86_64, or arm-none-eabi-gcc 13.2 for an STM32F4
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened
+      description: What you expected, what you got, and the smallest input or test that shows it.
+    validations:
+      required: true

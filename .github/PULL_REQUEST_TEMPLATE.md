@@ -9,8 +9,9 @@
 - [ ] `docs` — documentation
 - [ ] `tool` — tooling scripts
 - [ ] `ci` — CI/CD configuration
-- [ ] `project` — project-level change
-- [ ] `port` — HAL driver port
+- [ ] `example` — integration example under `examples/`
+- [ ] `port` — HAL driver port under `vsf-addon/`
+- [ ] `exp` — experiment under `tooling/experiments/`
 
 ## Checklist
 
@@ -22,4 +23,4 @@
 
 ## Test plan
 
-<!-- How was this tested? Which wheels/projects affected? -->
+<!-- How was this tested? Which wheels or examples are affected? -->
