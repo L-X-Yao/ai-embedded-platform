@@ -5,17 +5,19 @@
 - 这个文档回答"一个 wheel 过不过审"
 - `api-conventions.md` 回答"API 怎么写才合规"
 
-一个目录要被放进 `wheels/<层>/`（非 `_draft/`），必须满足本文档清单。没满足就还是草稿。
+一个目录要被放进 `wheels/<层>/`（非 `_draft/`），必须满足本文档的强制项；真机验收和 API 审批是升 stable 的条件（见 §0）。没满足就还是草稿。
 
 ## 0. 三级门槛（按状态）
 
 | 状态 | 位置 | 文档/测试要求 |
 |------|------|--------------|
 | **draft** | `wheels/_draft/<name>/` | 最小：API 头 + 测试能跑 + `README.md` 只需"how to test"5 行 |
-| **candidate** | `wheels/<层>/<name>/` + `STATUS: candidate` | 本文档全部强制项满足 |
-| **stable** | `wheels/<层>/<name>/` + `STATUS: stable` | 全部强制 + 推荐项 + 至少 2 个真项目用过 |
+| **candidate** | `wheels/<层>/<name>/` + `Status: candidate` | 主机验证全部通过：结构、README 章节、主机测试、审计、sanitizer、覆盖率门禁（`make wheel-gate` 和 `make check`）。不要求真机，也不要求 API 审批记录 |
+| **stable** | `wheels/<层>/<name>/` + `Status: stable` | 全部强制 + 推荐项 + 真机验收记录（L1、L3）+ API 审批记录 + 至少 2 个真项目用过 |
 
-**AI 新建的 wheel 默认为 draft**。升 candidate / stable 需人审批。
+**`_draft/` 下为 draft；放进 `wheels/<层>/` 即为 candidate，提交前必须过 `make wheel-gate`**。升 stable 需人审批。真机验收和 API 审批做到哪一步，如实写在 README 的 `Supported platforms` 和 `API review` 节，没做就写没做。
+
+2026-11-11 起按此定义（超级审计 D1-5）。原定义要求 candidate 已有真机验收和 API 审批记录，但 259 个 wheel 都标了 candidate，115 个驱动只有 4 个、20 个模块一个也没有真机记录，所以改定义，不改标签。
 
 ### 0.1 自动化护栏
 
@@ -161,7 +163,7 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 
 - [x] Host (sim) — passed 2026-xx-xx
 - [ ] ARM Cortex-M — not yet verified
-（L1+ 必须至少有 1 个真机打勾）
+（只有在真机上跑过才打勾。L1、L3 升 stable 必须至少有 1 个真机打勾）
 
 ## Known issues
 
@@ -225,9 +227,9 @@ None.
 - **输出格式**：`N passed, M failed`（`test_harness.h` 标准输出，`test_all.sh` 靠退出码判断结果）
 
 **L0**：sim 测试覆盖 ≥ 80% 代码行（目测或用 gcov）  
-**L1**：sim mock 测试 + 至少 1 次真机验收记录  
+**L1**：sim mock 测试；升 stable 另需至少 1 次真机验收记录  
 **L2**：sim loopback 测试（模拟两端通信）+ 协议一致性测试  
-**L3**：集成测试（组合多个 wheel）+ 真机验收
+**L3**：集成测试（组合多个 wheel）；升 stable 另需真机验收
 
 ## 5. API 设计规则（强制）
 
@@ -260,7 +262,7 @@ None.
 2. 用户 15 分钟内拍板：通过 / 这样改 / 不抽
 3. AI 按拍板后的 API 实现
 
-**没有 API 审批记录的 wheel 不能升 candidate**。审批记录放 `README.md` 底部"API Review"节：
+**没有 API 审批记录的 wheel 不能升 stable**（还没审批的 candidate 在 README 的 API review 节写明未审批）。审批记录放 `README.md` 底部"API Review"节：
 
 ```markdown
 ## API Review
@@ -292,9 +294,8 @@ None.
 
 每次升级需人审：
 
-- `_draft/<name>/` → `<层>/<name>/` with `STATUS: draft`：AI 可做，人终审
-- `STATUS: draft` → `STATUS: candidate`：API review 通过后人手改
-- `STATUS: candidate` → `STATUS: stable`：人验证"至少 2 个真项目使用"后手改
+- `_draft/<name>/` → `<层>/<name>/`，`Status: draft` 改为 `candidate`：过 `make wheel-gate` 后 AI 可做，人终审
+- `Status: candidate` → `Status: stable`：人确认真机验收记录（L1、L3）、API 审批记录，并验证"至少 2 个真项目使用"后手改
 
 自动化脚本：`tooling/wheel/wheel_promote.sh <wheel-path>` 处理目录移动和引用更新。
 
