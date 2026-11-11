@@ -104,6 +104,10 @@ sector just before it programs the last slot of the current one. So:
   that erase cannot be told apart.
 - `test_powercut_flash_ring.c` cuts the power at every erase and program of a
   three lap script, with the operation lost or half done.
+- `test_faults_flash_ring.c` runs random pushes, pops, discards, flushes and
+  resets on small rings, with power cuts and failing erases, programs and
+  reads. Its checks do not model the ring: they follow what was programmed and
+  which pushes returned OK.
 
 ## Usage
 
