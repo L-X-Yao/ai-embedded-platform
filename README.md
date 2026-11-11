@@ -127,10 +127,10 @@ Gates every component passes before it is allowed into `wheels/`:
 
 | Gate | Scope | Tooling |
 |------|-------|---------|
-| Host unit tests | 259/259 components, 1,199 test sources, 13,852 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
+| Host unit tests | 259/259 components, 1,200 test sources, 13,856 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
 | 60-check static audit (API naming, NULL guards, error codes, polling delays, test/run balance, ...) | 259/259 | `tooling/audit/audit_wheels.py` |
 | Line coverage >= 80% | 259/259 (nightly gate) | `tooling/test/coverage_scan.sh` |
-| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 components, all 965 test targets (nightly) | `tooling/audit/audit_sanitizer.py` |
+| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 components, all 966 test targets (nightly) | `tooling/audit/audit_sanitizer.py` |
 | Generated NULL-argument and boundary-value tests | every public API | `tooling/codegen/` |
 | ARM cross-compile, Cortex-M4 `-Os` | 259/259, per-component sizes in [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) | `tooling/audit/arm_size_audit.sh` |
 | libFuzzer harnesses | 57 targets (42 protocols, 11 primitives, 3 modules, 1 driver), parsers and encoders | `tooling/test/run_libfuzzer.sh` |
@@ -157,7 +157,7 @@ Read these before putting a driver on silicon.
 ## How it was built
 
 - **Timeline.** 2026-04-21 to 2026-05-20: about 1,170 commits by one embedded engineer directing Claude Code, often several agents in parallel git worktrees.
-- **Division of labour.** The human owns requirements, API approval, architecture decisions ([12 ADRs](docs/adr/README.md)), audits and hardware tests. The AI implements, writes tests, documents and runs the tooling.
+- **Division of labour.** The human owns requirements, API approval, architecture decisions ([11 ADRs](docs/adr/README.md)), audits and hardware tests. The AI implements, writes tests, documents and runs the tooling.
 - **The contract.** [CLAUDE.md](CLAUDE.md) (Chinese) is the standing instruction set the agent works under. [docs/wheel-contract.md](docs/wheel-contract.md) defines what a component must be, [docs/api-conventions.md](docs/api-conventions.md) fixes naming and error handling, [docs/ai-workflow.md](docs/ai-workflow.md) is the playbook for 14 task types, and [docs/debugging-playbook.md](docs/debugging-playbook.md) is the running list of mistakes so they are not repeated.
 - **Why the tooling exists.** Generation was fast (about 15 minutes from scaffold to green tests for a typical driver) and the defect rates above are what fast looks like without checks. Everything under `tooling/` was built in response to a class of bug that had already slipped through once.
 - **Not included.** This is the public copy of an internal monorepo. The `projects/` directory (customer firmware that consumed these components) is not published; the places in the docs that mention `projects/flybox` or `projects/drone_light` refer to it.
